@@ -12,7 +12,6 @@ import {
   Card, DashedButton, ErrorNotice, Eyebrow, PlusRule, PrimaryButton, ProgressBar, Segmented, Spinner,
   TextButton,
 } from './kit';
-import { LegalLinks } from './LegalLinks';
 import s from './screens.module.css';
 
 type Slot = 'a' | 'b';
@@ -240,7 +239,6 @@ export function HomeScreen({
             ? 'Les sauvegardes sont lues et fusionnées dans ce navigateur. Celles gardées dans le compte y sont aussi déposées, pour les retrouver sur tes autres appareils.'
             : 'Les sauvegardes sont lues et fusionnées dans ce navigateur : elles ne sont envoyées nulle part.'}
         </p>
-        <LegalLinks inline />
       </div>
 
       <div className={s.footer}>

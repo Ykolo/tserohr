@@ -10,7 +10,7 @@
  */
 'use client';
 
-import { CircleUser } from 'lucide-react';
+import { CircleUser, LogIn } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { inspectBackup, type BackupInfo } from '@core/backup-info';
@@ -28,6 +28,7 @@ import { addToHistory, loadFile, loadHistory, storedFiles, storeFile, type Histo
 import { sha256Web, wasmHost } from '@/lib/sqlite-wasm';
 
 import { AccountScreen } from './AccountScreen';
+import { LegalLinks } from './LegalLinks';
 import { MyAccountScreen } from './MyAccountScreen';
 import { HistoryScreen } from './HistoryScreen';
 import { HomeScreen, type CloudLine } from './HomeScreen';
@@ -126,8 +127,9 @@ function AccountBar({ signedIn, pending, disabled, onSignIn, onOpenAccount }: {
           disabled={disabled}
         />
       ) : (
-        <button type="button" className={s.accountLink} onClick={onSignIn} disabled={disabled}>
-          Se connecter pour synchroniser
+        <button type="button" className={s.accountButton} onClick={onSignIn} disabled={disabled}>
+          <LogIn size={16} aria-hidden />
+          Se connecter
         </button>
       )}
     </div>
@@ -695,6 +697,9 @@ export function Tserohr() {
           <nav className={s.tabs}>
             <Segmented label="Sections" options={TABS} value={tab} onChange={switchTab} variant="tabs" disabled={busy} />
           </nav>
+          <footer className={s.legalFooter}>
+            <LegalLinks />
+          </footer>
         </>
       )}
     </main>
