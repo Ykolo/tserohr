@@ -19,6 +19,7 @@ import { MIN_PASSWORD } from '@core/auth-errors';
 import { emailOtp, signIn, signUp } from '@/lib/auth-client';
 
 import { ErrorNotice, Eyebrow, OtpField, PasswordField, PrimaryButton, Segmented, TextButton, TextField } from './kit';
+import { LegalLinks } from './LegalLinks';
 import s from './screens.module.css';
 
 const MODES = [
@@ -174,6 +175,8 @@ export function AccountScreen({ onDone }: { onDone: () => void }) {
           )}
           {entering && <TextButton label="Continuer sans compte" onClick={onDone} disabled={busy} />}
         </div>
+
+        <LegalLinks inline />
       </form>
     </div>
   );
