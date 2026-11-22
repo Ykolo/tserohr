@@ -10,7 +10,6 @@
  */
 'use client';
 
-import { CircleUser, LogIn } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { inspectBackup, type BackupInfo } from '@core/backup-info';
@@ -32,12 +31,12 @@ import { LegalLinks } from './LegalLinks';
 import { MyAccountScreen } from './MyAccountScreen';
 import { HistoryScreen } from './HistoryScreen';
 import { HomeScreen, type CloudLine } from './HomeScreen';
-import { IconButton, Segmented } from './kit';
+import { Segmented } from './kit';
 import s from './screens.module.css';
 import { SummaryScreen, type CloudSave } from './SummaryScreen';
 
 type Slot = 'a' | 'b';
-type Tab = 'merge' | 'history';
+type Tab = 'merge' | 'history' | 'account';
 
 const SLOTS = ['a', 'b'] as const;
 
@@ -61,10 +60,17 @@ interface MergeResult {
   file: File;
 }
 
-const TABS = [
-  { value: 'merge', label: 'Fusionner' },
-  { value: 'history', label: 'Historique' },
-] as const;
+/**
+ * Les onglets du bas. Le compte reste facultatif : son onglet mène à la
+ * connexion, ou à « Mon compte » (déconnexion, suppression) une fois connecté.
+ */
+function tabsFor(signedIn: boolean) {
+  return [
+    { value: 'merge', label: 'Fusionner' },
+    { value: 'history', label: 'Historique' },
+    { value: 'account', label: signedIn ? 'Compte' : 'Connexion' },
+  ] as const;
+}
 
 /**
  * Rend la main à la boucle d'événements, le temps d'un tour : React peint, la
@@ -103,38 +109,6 @@ function canShareFiles(file: File): boolean {
   }
 }
 
-/**
- * Le compte, en une ligne discrète au-dessus de l'écran : il reste facultatif.
- * Connecté, une seule icône mène à « Mon compte » (déconnexion, suppression).
- * Rien ne s'affiche tant que la session n'est pas connue, pour ne pas faire
- * clignoter « Se connecter » chez quelqu'un qui l'est déjà.
- */
-function AccountBar({ signedIn, pending, disabled, onSignIn, onOpenAccount }: {
-  signedIn: boolean;
-  pending: boolean;
-  disabled: boolean;
-  onSignIn: () => void;
-  onOpenAccount: () => void;
-}) {
-  if (pending) return <div className={s.account} />;
-  return (
-    <div className={s.account}>
-      {signedIn ? (
-        <IconButton
-          label="Mon compte"
-          icon={<CircleUser size={22} aria-hidden />}
-          onClick={onOpenAccount}
-          disabled={disabled}
-        />
-      ) : (
-        <button type="button" className={s.accountButton} onClick={onSignIn} disabled={disabled}>
-          <LogIn size={16} aria-hidden />
-          Se connecter
-        </button>
-      )}
-    </div>
-  );
-}
 
 export function Tserohr() {
   const [tab, setTab] = useState<Tab>('merge');
@@ -162,10 +136,11 @@ export function Tserohr() {
   const [stored, setStored] = useState<Set<string>>(new Set());
 
   const session = useSession();
-  /** Écran du compte ouvert par-dessus l'application, s'il y en a un. */
-  const [accountScreen, setAccountScreen] = useState<'sign-in' | 'account' | null>(null);
 
-  /** Depuis Mon compte : déconnecte, puis mène à l'écran de connexion. */
+  /**
+   * Depuis Mon compte : déconnecte. L'onglet reste sur le compte, qui montre
+   * alors l'écran de connexion ; un échec ramène à la fusion, où l'erreur s'affiche.
+   */
   const logout = useCallback(async () => {
     setError(null);
     try {
@@ -173,13 +148,11 @@ export function Tserohr() {
       if (failure) {
         const view = describeAuthError(failure);
         setError(logError('déconnexion', new Error(view.technical), view));
-        setAccountScreen(null);
-        return;
+        setTab('merge');
       }
-      setAccountScreen('sign-in');
     } catch (err) {
       setError(logError('déconnexion', err, describeAuthError({ message: String(err) })));
-      setAccountScreen(null);
+      setTab('merge');
     }
   }, []);
 
@@ -634,27 +607,22 @@ export function Tserohr() {
           cloudSave={userId ? cloudSave : null}
           onPromote={(mergeId) => void promote(mergeId, result.file)}
         />
-      ) : accountScreen === 'sign-in' ? (
-        <AccountScreen onDone={() => setAccountScreen(null)} />
-      ) : accountScreen === 'account' && session.data ? (
-        <MyAccountScreen
-          email={session.data.user.email}
-          busy={busy}
-          onBack={() => setAccountScreen(null)}
-          onSignOut={() => void logout()}
-          onDeleted={() => setAccountScreen(null)}
-        />
       ) : (
         <>
-          <AccountBar
-            signedIn={!!session.data}
-            pending={session.isPending}
-            disabled={busy}
-            onSignIn={() => { setError(null); setAccountScreen('sign-in'); }}
-            onOpenAccount={() => { setError(null); setAccountScreen('account'); }}
-          />
           <div className={s.content}>
-            {tab === 'merge' ? (
+            {tab === 'account' ? (
+              session.data ? (
+                <MyAccountScreen
+                  email={session.data.user.email}
+                  busy={busy}
+                  onBack={() => switchTab('merge')}
+                  onSignOut={() => void logout()}
+                  onDeleted={() => switchTab('merge')}
+                />
+              ) : session.isPending ? null : (
+                <AccountScreen onDone={() => switchTab('merge')} />
+              )
+            ) : tab === 'merge' ? (
               <HomeScreen
                 fileA={fileA}
                 fileB={fileB}
@@ -695,7 +663,7 @@ export function Tserohr() {
             )}
           </div>
           <nav className={s.tabs}>
-            <Segmented label="Sections" options={TABS} value={tab} onChange={switchTab} variant="tabs" disabled={busy} />
+            <Segmented label="Sections" options={tabsFor(!!session.data)} value={tab} onChange={switchTab} variant="tabs" disabled={busy} />
           </nav>
           <footer className={s.legalFooter}>
             <LegalLinks />

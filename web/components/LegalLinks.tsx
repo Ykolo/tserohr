@@ -5,9 +5,9 @@ import { LEGAL_PAGES } from '@/lib/legal';
 import s from './legal.module.css';
 
 /** Les trois pages légales, en petits liens : pied d'écran, connexion, compte. */
-export function LegalLinks({ current, inline }: { current?: string; inline?: boolean }) {
+export function LegalLinks({ current }: { current?: string }) {
   return (
-    <nav className={inline ? `${s.links} ${s.inline}` : s.links} aria-label="Informations légales">
+    <nav className={s.links} aria-label="Informations légales">
       {LEGAL_PAGES.map((page) => (
         <Link
           key={page.href}
