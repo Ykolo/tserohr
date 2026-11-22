@@ -10,6 +10,7 @@
  */
 'use client';
 
+import { CircleUser, History, Merge, type LucideIcon } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { inspectBackup, type BackupInfo } from '@core/backup-info';
@@ -31,7 +32,6 @@ import { LegalLinks } from './LegalLinks';
 import { MyAccountScreen } from './MyAccountScreen';
 import { HistoryScreen } from './HistoryScreen';
 import { HomeScreen, type CloudLine } from './HomeScreen';
-import { Segmented } from './kit';
 import s from './screens.module.css';
 import { SummaryScreen, type CloudSave } from './SummaryScreen';
 
@@ -64,12 +64,42 @@ interface MergeResult {
  * Les onglets du bas. Le compte reste facultatif : son onglet mène à la
  * connexion, ou à « Mon compte » (déconnexion, suppression) une fois connecté.
  */
-function tabsFor(signedIn: boolean) {
+function tabsFor(signedIn: boolean): { value: Tab; label: string; Icon: LucideIcon }[] {
   return [
-    { value: 'merge', label: 'Fusionner' },
-    { value: 'history', label: 'Historique' },
-    { value: 'account', label: signedIn ? 'Compte' : 'Connexion' },
-  ] as const;
+    { value: 'merge', label: 'Fusionner', Icon: Merge },
+    { value: 'history', label: 'Historique', Icon: History },
+    { value: 'account', label: signedIn ? 'Compte' : 'Connexion', Icon: CircleUser },
+  ];
+}
+
+/**
+ * Barre de navigation du bas : icône et libellé, l'onglet actif à la couleur
+ * d'accent. Volontairement différente des segments à pastille (« En cas de
+ * doublon ») pour qu'on ne confonde pas naviguer et choisir une option.
+ */
+function TabBar({ signedIn, value, onChange, disabled }: {
+  signedIn: boolean;
+  value: Tab;
+  onChange: (tab: Tab) => void;
+  disabled: boolean;
+}) {
+  return (
+    <nav className={s.tabs} aria-label="Sections">
+      {tabsFor(signedIn).map(({ value: tab, label, Icon }) => (
+        <button
+          key={tab}
+          type="button"
+          className={tab === value ? `${s.tabItem} ${s.tabActive}` : s.tabItem}
+          aria-current={tab === value ? 'page' : undefined}
+          onClick={() => onChange(tab)}
+          disabled={disabled}
+        >
+          <Icon size={22} strokeWidth={tab === value ? 2.2 : 1.8} aria-hidden />
+          {label}
+        </button>
+      ))}
+    </nav>
+  );
 }
 
 /**
@@ -662,9 +692,7 @@ export function Tserohr() {
               />
             )}
           </div>
-          <nav className={s.tabs}>
-            <Segmented label="Sections" options={tabsFor(!!session.data)} value={tab} onChange={switchTab} variant="tabs" disabled={busy} />
-          </nav>
+          <TabBar signedIn={!!session.data} value={tab} onChange={switchTab} disabled={busy} />
           <footer className={s.legalFooter}>
             <LegalLinks />
           </footer>
