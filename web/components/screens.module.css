@@ -408,18 +408,8 @@
   }
 }
 
-/* --- Compte : barre discrète au-dessus de l'écran, et écran de connexion --- */
+/* --- Compte : onglet du bas, et écran de connexion --- */
 
-.account {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 4px;
-  min-height: 34px;
-  padding: 12px 26px 0;
-  font-size: 13px;
-  color: var(--muted);
-}
 .accountLink {
   flex: none;
   padding: 4px;
@@ -435,26 +425,6 @@
 .legalFooter {
   padding: 6px 26px 18px;
 }
-
-/* Connexion : un vrai bouton, compact, au contour des boutons secondaires. */
-.accountButton {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 14px;
-  border: 1px solid var(--outline);
-  border-radius: var(--radius-badge);
-  background: var(--card);
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--inkSoft);
-  transition: border-color 120ms, color 120ms;
-}
-.accountButton:not(:disabled):hover {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-.accountButton:disabled { opacity: 0.5; }
 
 /* Mon compte : la suppression, à l'écart en bas de l'écran. */
 .dangerZone {

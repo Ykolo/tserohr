@@ -138,11 +138,6 @@
   text-decoration: none;
 }
 
-/* Hors des pages légales : sous le contenu des écrans. */
-.inline {
-  margin-top: 24px;
-}
-
 @media (min-width: 640px) {
   .page {
     margin-block: 32px;

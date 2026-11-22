@@ -16,7 +16,6 @@ import { logError, type ErrorView } from '@core/errors';
 import { deleteUser } from '@/lib/auth-client';
 
 import { DangerButton, ErrorNotice, Eyebrow, PasswordField, SecondaryButton, TextButton } from './kit';
-import { LegalLinks } from './LegalLinks';
 import s from './screens.module.css';
 
 export function MyAccountScreen({ email, busy, onBack, onSignOut, onDeleted }: {
@@ -51,8 +50,6 @@ export function MyAccountScreen({ email, busy, onBack, onSignOut, onDeleted }: {
           </p>
           <DangerButton solid label="Supprimer mon compte" onClick={() => setConfirming(true)} disabled={busy} />
         </section>
-
-        <LegalLinks inline />
       </div>
 
       {confirming && (
