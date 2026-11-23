@@ -6,35 +6,40 @@ import { EDITOR } from '@/lib/legal';
 
 export const metadata: Metadata = {
   title: 'Mentions légales · Tserohr',
-  description: 'Éditeur, hébergeurs et contact du site et de l’application Tserohr.',
+  description: 'Éditeur, hébergeur et contact du site et de l’application Tserohr.',
 };
 
 export default function MentionsLegales() {
   return (
     <LegalPage title="Mentions légales" path="/mentions-legales">
       <h2>Éditeur</h2>
-      <p>Le site tserohr.com et l’application Tserohr sont édités par :</p>
-      <ul>
-        <li>{EDITOR.name}, {EDITOR.status}</li>
-        <li>SIREN : {EDITOR.siren} — SIRET : {EDITOR.siret}</li>
-        <li>Adresse : {EDITOR.address}</li>
-        <li>E-mail : <a href={`mailto:${EDITOR.email}`}>{EDITOR.email}</a></li>
-        <li>Téléphone : {EDITOR.phone}</li>
-      </ul>
-      <p>Directeur de la publication : {EDITOR.name}.</p>
+      <p>
+        Le site tserohr.com et l’application Tserohr sont édités à titre non professionnel par un particulier,{' '}
+        {EDITOR.name}, qui en est aussi le directeur de la publication. Le service est gratuit, sans publicité ni
+        abonnement.
+      </p>
+      <p>
+        Comme la loi pour la confiance dans l’économie numérique le permet à un éditeur non professionnel, son adresse
+        et son téléphone ne sont pas publiés : ils ont été communiqués à l’hébergeur ci-dessous. Pour le joindre :{' '}
+        <a href={`mailto:${EDITOR.email}`}>{EDITOR.email}</a>.
+      </p>
 
       <h2>Hébergement</h2>
+      <p>Le site et son serveur sont hébergés par :</p>
       <ul>
         <li>
-          Site et serveur : Vercel Inc., 440 N Barranca Ave #4133, Covina, CA 91723, États-Unis —{' '}
+          Vercel Inc., 440 N Barranca Ave #4133, Covina, CA 91723, États-Unis — téléphone : +1 559 288 7060 —{' '}
           <a href="https://vercel.com">vercel.com</a>
         </li>
+      </ul>
+      <p>Autres prestataires techniques :</p>
+      <ul>
         <li>
-          Fichiers : Cloudflare, Inc. (service R2), 101 Townsend St, San Francisco, CA 94107, États-Unis —{' '}
-          <a href="https://www.cloudflare.com">cloudflare.com</a>
+          Fichiers déposés : Cloudflare, Inc. (service R2), 101 Townsend St, San Francisco, CA 94107, États-Unis —
+          téléphone : +1 650 319 8930 — <a href="https://www.cloudflare.com">cloudflare.com</a>
         </li>
         <li>
-          Base de données : Neon, Inc. — <a href="https://neon.com">neon.com</a>
+          Base de données : Neon, LLC (groupe Databricks), États-Unis — <a href="https://neon.com">neon.com</a>
         </li>
       </ul>
 
@@ -47,7 +52,8 @@ export default function MentionsLegales() {
 
       <h2>Propriété intellectuelle</h2>
       <p>
-        Le code, le nom, le logo et les textes de Tserohr appartiennent à {EDITOR.name}, sauf mention contraire.
+        Le code, le nom, le logo et les textes de Tserohr appartiennent à leur auteur, {EDITOR.name}, sauf mention
+        contraire.
         Les fichiers déposés par les utilisateurs restent leur propriété.
       </p>
 

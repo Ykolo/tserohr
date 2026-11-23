@@ -157,6 +157,24 @@ export function AccountScreen({ onDone }: { onDone: () => void }) {
             </>
           )}
 
+          {step === 'sign-up' && (
+            <label className={s.agree}>
+              <input
+                type="checkbox"
+                name="accept-terms"
+                required
+                checked={flow.accepted}
+                onChange={(e) => flow.setAccepted(e.target.checked)}
+                disabled={busy}
+              />
+              <span>
+                J’ai 15 ans ou plus, et j’accepte les{' '}
+                <a href="/cgu" target="_blank" rel="noopener">CGU</a> et la{' '}
+                <a href="/confidentialite" target="_blank" rel="noopener">politique de confidentialité</a>.
+              </span>
+            </label>
+          )}
+
           {flow.error && <ErrorNotice error={flow.error} onDismiss={flow.dismissError} />}
 
           <PrimaryButton type="submit" label={busy ? 'Un instant…' : ACTIONS[step]} disabled={busy || !flow.ready} />

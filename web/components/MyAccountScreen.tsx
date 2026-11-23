@@ -15,15 +15,18 @@ import { logError, type ErrorView } from '@core/errors';
 
 import { deleteUser } from '@/lib/auth-client';
 
-import { DangerButton, ErrorNotice, Eyebrow, PasswordField, SecondaryButton, TextButton } from './kit';
-import s from './screens.module.css';
+import { DangerButton, ErrorNotice, Eyebrow, PasswordField, SecondaryButton, TextButton } from './kit';import s from './screens.module.css';
 
-export function MyAccountScreen({ email, busy, onBack, onSignOut, onDeleted }: {
+export function MyAccountScreen({ email, busy, onBack, onSignOut, onDeleted, consented, onWithdraw }: {
   email: string;
   busy: boolean;
   onBack: () => void;
   onSignOut: () => void;
   onDeleted: () => void;
+  /** Le consentement au stockage des fichiers (art. 9 RGPD) est-il donné ? */
+  consented: boolean;
+  /** Le retire ; le serveur efface alors tous les fichiers du compte. */
+  onWithdraw: () => Promise<void>;
 }) {
   const [confirming, setConfirming] = useState(false);
 
@@ -43,6 +46,8 @@ export function MyAccountScreen({ email, busy, onBack, onSignOut, onDeleted }: {
           <TextButton label="Retour" onClick={onBack} disabled={busy} />
         </div>
 
+        {consented && <WithdrawConsent busy={busy} onWithdraw={onWithdraw} />}
+
         <section className={s.dangerZone} aria-labelledby="danger-zone-title">
           <h2 id="danger-zone-title" className={s.dangerTitle}>Supprimer mon compte</h2>
           <p className={s.deleteNote}>
@@ -56,6 +61,53 @@ export function MyAccountScreen({ email, busy, onBack, onSignOut, onDeleted }: {
         <DeleteDialog email={email} onCancel={() => setConfirming(false)} onDeleted={onDeleted} />
       )}
     </div>
+  );
+}
+
+/**
+ * Le retrait du consentement au stockage : il efface les sauvegardes et les
+ * fusions du compte, mais garde le compte. Une confirmation en ligne suffit,
+ * le compte restant accessible.
+ */
+function WithdrawConsent({ busy, onWithdraw }: { busy: boolean; onWithdraw: () => Promise<void> }) {
+  const [asking, setAsking] = useState(false);
+  const [working, setWorking] = useState(false);
+  const [error, setError] = useState<ErrorView | null>(null);
+
+  const confirm = async () => {
+    setError(null);
+    setWorking(true);
+    try {
+      await onWithdraw();
+      setAsking(false);
+    } catch (err) {
+      setError(logError('retrait du consentement', err));
+    } finally {
+      setWorking(false);
+    }
+  };
+
+  return (
+    <section className={s.dangerZone} aria-labelledby="consent-title">
+      <h2 id="consent-title" className={s.dangerTitle}>Fichiers gardés dans le compte</h2>
+      <p className={s.deleteNote}>
+        Tu as accepté que tes sauvegardes et tes fusions soient stockées dans ton compte. Retirer cet accord les efface
+        toutes du serveur ; le compte, lui, reste.
+      </p>
+      {asking ? (
+        <>
+          <DangerButton
+            label={working ? 'Effacement…' : 'Retirer et effacer mes fichiers'}
+            onClick={() => void confirm()}
+            disabled={busy || working}
+          />
+          <TextButton label="Annuler" onClick={() => setAsking(false)} disabled={working} />
+        </>
+      ) : (
+        <SecondaryButton label="Retirer mon accord" onClick={() => setAsking(true)} disabled={busy} />
+      )}
+      {error && <ErrorNotice error={error} onDismiss={() => setError(null)} />}
+    </section>
   );
 }
 

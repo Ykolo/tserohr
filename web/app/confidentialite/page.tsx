@@ -16,7 +16,7 @@ export default function Confidentialite() {
       <p>Cette politique explique quelles données Tserohr traite, pourquoi, et quels sont vos droits.</p>
 
       <h2>Responsable du traitement</h2>
-      <p>{EDITOR.name}, {EDITOR.address}, {mail}.</p>
+      <p>{EDITOR.name}, particulier, joignable à {mail}.</p>
 
       <h2>En bref</h2>
       <ul>
@@ -39,22 +39,40 @@ export default function Confidentialite() {
             'Jusqu’à la suppression du compte',
           ],
           [
-            'Codes envoyés par e-mail',
+            'Compte dont l’adresse n’a jamais été confirmée',
+            'Finir l’inscription',
+            'Exécution du service',
+            '7 jours, puis effacé',
+          ],
+          [
+            'Dates d’acceptation des CGU et du consentement au stockage des fichiers',
+            'Prouver votre accord',
+            'Obligation légale (art. 7.1 RGPD)',
+            'Jusqu’à la suppression du compte ; celle du consentement, jusqu’à son retrait',
+          ],
+          [
+            'Codes envoyés par e-mail (stockés sous forme d’empreinte)',
             'Vérifier l’adresse, réinitialiser le mot de passe',
             'Exécution du service',
-            'Quelques minutes',
+            '10 minutes, puis effacés sous 24 heures',
           ],
           [
             'Sessions : adresse IP, type d’appareil et de navigateur',
             'Garder la connexion, détecter les abus',
             'Intérêt légitime (sécurité)',
-            'Durée de la session',
+            'Jusqu’à l’expiration de la session, puis effacées sous 24 heures',
+          ],
+          [
+            'Compteurs anti-abus : adresse IP, ou empreinte de l’adresse e-mail',
+            'Limiter les tentatives de connexion, d’envoi de codes et de dépôt',
+            'Intérêt légitime (sécurité)',
+            '24 heures au plus',
           ],
           [
             <>Fichiers <code>.jwlibrary</code> déposés et fusions</>,
             'Synchroniser et retrouver vos sauvegardes',
             'Consentement explicite (art. 9.2.a RGPD)',
-            'Sauvegardes : 30 jours. Fusions : jusqu’à leur suppression ou celle du compte',
+            'Sauvegardes : 30 jours. Fusions : les 30 plus récentes, jusqu’à leur suppression, le retrait du consentement ou la suppression du compte',
           ],
           [
             'Métadonnées des fichiers : nom, taille, empreinte SHA-256, appareil',
@@ -79,15 +97,19 @@ export default function Confidentialite() {
       </p>
       <p>C’est pourquoi :</p>
       <ul>
-        <li>nous vous demandons un consentement explicite avant votre premier dépôt ;</li>
+        <li>
+          nous vous demandons un consentement explicite avant votre premier dépôt, et en gardons la date. Sans lui,
+          le serveur refuse tout envoi ;
+        </li>
         <li>la fusion se fait sur votre appareil et le serveur n’ouvre jamais vos fichiers ;</li>
         <li>
           les fichiers sont envoyés et téléchargés par des liens temporaires (10 minutes pour l’envoi, 5 minutes pour
           le téléchargement) ;
         </li>
         <li>
-          vous pouvez retirer votre consentement à tout moment en supprimant vos fichiers ou votre compte. Le retrait
-          ne remet pas en cause ce qui a été fait avant.
+          vous pouvez retirer votre consentement à tout moment depuis « Mon compte » (« Retirer mon accord ») : tous
+          vos fichiers sont alors effacés du serveur, et le compte reste. Supprimer le compte le retire aussi. Le
+          retrait ne remet pas en cause ce qui a été fait avant.
         </li>
       </ul>
       <p>Vous pouvez aussi utiliser Tserohr sans compte : rien ne quitte alors votre appareil.</p>
@@ -97,8 +119,8 @@ export default function Confidentialite() {
         head={['Prestataire', 'Rôle', 'Localisation']}
         rows={[
           ['Vercel', 'Hébergement du site et du serveur', 'Serveur à Francfort (UE) ; société établie aux États-Unis'],
-          ['Neon', 'Base de données (comptes et métadonnées)', 'Francfort (UE)'],
-          ['Cloudflare (R2)', 'Stockage des fichiers', 'Francfort (UE)'],
+          ['Neon (groupe Databricks)', 'Base de données (comptes et métadonnées)', 'Francfort (UE) ; société établie aux États-Unis'],
+          ['Cloudflare (R2)', 'Stockage des fichiers déposés', 'Amérique du Nord (États-Unis)'],
           ['Resend', 'Envoi des e-mails (codes de vérification)', 'États-Unis'],
         ]}
       />
@@ -120,15 +142,14 @@ export default function Confidentialite() {
       <h2>Cookies</h2>
       <p>Tserohr utilise uniquement un cookie de session, nécessaire pour rester connecté. Il est exempté de consentement.</p>
       <p>
-        Nous mesurons la fréquentation du site avec Vercel Web Analytics, sans cookie et sans identifiant stocké sur
-        votre appareil. Les données sont anonymisées et agrégées, et ne servent qu’à améliorer le service. Le nom et le
-        contenu de vos fichiers ne sont jamais transmis à cet outil.
+        Aucun outil de mesure d’audience, de publicité ou de suivi n’est utilisé. Le site garde dans votre navigateur
+        l’historique de vos fusions, pour vous seul : il n’est envoyé nulle part.
       </p>
 
       <h2>Mineurs</h2>
       <p>
-        Le compte est réservé aux personnes de 15 ans et plus. En dessous, l’accord d’un parent est nécessaire.
-        L’utilisation sans compte reste possible.
+        Le compte est réservé aux personnes de 15 ans et plus, ce que l’inscription fait confirmer. L’utilisation
+        sans compte reste possible à tout âge.
       </p>
 
       <h2>Vos droits</h2>
@@ -138,6 +159,7 @@ export default function Confidentialite() {
       </p>
       <ul>
         <li>Supprimer votre compte et tous vos fichiers : écran « Mon compte ».</li>
+        <li>Retirer votre consentement et effacer vos fichiers, en gardant le compte : « Mon compte », « Retirer mon accord ».</li>
         <li>Télécharger vos fichiers : historique des sauvegardes.</li>
         <li>Pour toute autre demande : {mail}. Réponse sous un mois.</li>
       </ul>

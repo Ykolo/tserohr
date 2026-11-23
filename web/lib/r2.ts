@@ -76,6 +76,18 @@ export interface R2Config {
   accessKeyId: string;
   secretAccessKey: string;
   bucket: string;
+  /**
+   * Juridiction du bucket (`R2_JURISDICTION`) : `eu` pour un bucket créé avec
+   * la juridiction Union européenne, dont les données ne quittent pas l'UE.
+   * Un tel bucket ne répond que sur `{compte}.eu.r2.cloudflarestorage.com`.
+   * Vide : juridiction par défaut.
+   */
+  jurisdiction: '' | 'eu';
+}
+
+/** Le point d'accès S3 du bucket, qui dépend de sa juridiction. */
+export function r2Endpoint({ account, jurisdiction }: Pick<R2Config, 'account' | 'jurisdiction'>): string {
+  return `https://${account}${jurisdiction ? `.${jurisdiction}` : ''}.r2.cloudflarestorage.com`;
 }
 
 /**
@@ -99,7 +111,11 @@ export function readR2Config(env: Record<string, string | undefined>): R2Config 
     accessKeyId: clean(env.R2_ACCESS_KEY_ID),
     secretAccessKey: clean(env.R2_SECRET_ACCESS_KEY),
     bucket: clean(env.R2_BUCKET),
+    jurisdiction: clean(env.R2_JURISDICTION).toLowerCase(),
   };
+  if (config.jurisdiction !== '' && config.jurisdiction !== 'eu') {
+    throw new Error(`r2 : R2_JURISDICTION vaut « ${config.jurisdiction} » — attendu « eu », ou vide pour la juridiction par défaut`);
+  }
   if (!config.account || !config.accessKeyId || !config.secretAccessKey || !config.bucket) {
     throw new Error('r2 : R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY et R2_BUCKET sont requis (voir web/.env.example)');
   }
@@ -108,7 +124,7 @@ export function readR2Config(env: Record<string, string | undefined>): R2Config 
   if (!/^[0-9a-f]{32}$/i.test(config.account)) {
     throw new Error(`r2 : R2_ACCOUNT_ID mal formé (${config.account.length} caractères) — attendu l'identifiant de compte Cloudflare, 32 caractères hexadécimaux`);
   }
-  return config;
+  return config as R2Config;
 }
 
 /**
@@ -117,10 +133,11 @@ export function readR2Config(env: Record<string, string | undefined>): R2Config 
  */
 function r2() {
   if (cached) return cached;
-  const { account, accessKeyId, secretAccessKey, bucket } = readR2Config(process.env);
+  const config = readR2Config(process.env);
+  const { accessKeyId, secretAccessKey, bucket } = config;
   const client = new S3Client({
     region: 'auto',
-    endpoint: `https://${account}.r2.cloudflarestorage.com`,
+    endpoint: r2Endpoint(config),
     credentials: { accessKeyId, secretAccessKey },
     // `https://{compte}.r2…/{bucket}/{clé}` plutôt que `{bucket}.{compte}.r2…` :
     // un seul hôte, celui sur lequel le CORS du bucket a été vérifié (YKO-36).

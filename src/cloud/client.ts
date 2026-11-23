@@ -18,6 +18,7 @@ import { AppError } from '../errors';
 import type {
   ApiError,
   BackupDto,
+  ConsentDto,
   DownloadLink,
   ExistingUpload,
   MergeMeta,
@@ -69,6 +70,12 @@ export interface CloudClient {
   clearSlot(slot: Slot): Promise<void>;
   /** Retire une fusion de l'historique, fichier compris. */
   deleteMerge(id: string): Promise<void>;
+  /** Le consentement au dépôt de fichiers (art. 9 RGPD), sans lequel aucun envoi n'est accepté. */
+  consent(): Promise<ConsentDto>;
+  /** Donne ce consentement. */
+  giveConsent(): Promise<ConsentDto>;
+  /** Le retire, ce qui efface tous les fichiers du compte. */
+  withdrawConsent(): Promise<void>;
 }
 
 export interface CloudClientOptions {
@@ -255,6 +262,12 @@ export function createCloudClient(opts: CloudClientOptions): CloudClient {
     clearSlot: (slot) => call<void>('DELETE', `/api/slots/${slot}`),
 
     deleteMerge: (id) => call<void>('DELETE', `/api/merges/${encodeURIComponent(id)}`),
+
+    consent: () => call<ConsentDto>('GET', '/api/consent'),
+
+    giveConsent: () => call<ConsentDto>('POST', '/api/consent'),
+
+    withdrawConsent: () => call<void>('DELETE', '/api/consent'),
   };
   return client;
 }

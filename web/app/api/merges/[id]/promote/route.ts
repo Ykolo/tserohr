@@ -14,6 +14,7 @@ import type { MergeReport } from '@core/merge';
 
 import { notFound, toBackupDto } from '@/lib/api';
 import { requireUser } from '@/lib/auth';
+import { requireConsent } from '@/lib/consent';
 import { prisma } from '@/lib/db';
 import { backupKey, copy, remove } from '@/lib/r2';
 
@@ -24,6 +25,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const user = await requireUser(req);
   if (user instanceof Response) return user;
   const { id } = await params;
+  // La copie crée un nouveau dépôt : même condition qu'un envoi.
+  const refused = await requireConsent(user.id);
+  if (refused) return refused;
 
   const merge = await prisma.merge.findFirst({ where: { id, userId: user.id, status: 'ready' } });
   if (!merge || !merge.fileName) return notFound();

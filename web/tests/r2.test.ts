@@ -40,6 +40,18 @@ describe('readR2Config', () => {
   test('variable manquante ou vide après nettoyage', () => {
     expect(() => r2.readR2Config({ ...base, R2_BUCKET: '""' })).toThrow('sont requis');
   });
+
+  test('juridiction : vide par défaut, « eu » accepté, le reste refusé', () => {
+    expect(r2.readR2Config(base).jurisdiction).toBe('');
+    expect(r2.readR2Config({ ...base, R2_JURISDICTION: ' "EU"\n' }).jurisdiction).toBe('eu');
+    expect(() => r2.readR2Config({ ...base, R2_JURISDICTION: 'fedramp' })).toThrow('R2_JURISDICTION');
+  });
+
+  test('point d’accès : « .eu » pour un bucket de juridiction UE', () => {
+    const account = '0123456789abcdef0123456789abcdef';
+    expect(r2.r2Endpoint({ account, jurisdiction: '' })).toBe(`https://${account}.r2.cloudflarestorage.com`);
+    expect(r2.r2Endpoint({ account, jurisdiction: 'eu' })).toBe(`https://${account}.eu.r2.cloudflarestorage.com`);
+  });
 });
 
 describe('clés', () => {

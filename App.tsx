@@ -43,6 +43,7 @@ import { overallRatio } from './src/progress';
 import { color, font } from './src/theme';
 import { signOut, useSession } from './src/auth-client';
 import { describeKeptSlot, type BackupDto, type MergeMeta, type MergePage } from './src/cloud/types';
+import { useConsent } from './src/consent';
 import { cloud } from './src/platform/cloud-expo';
 import { describeAuthError } from './src/auth-errors';
 import { AccountScreen } from './src/ui/AccountScreen';
@@ -327,6 +328,9 @@ function Tserohr() {
 
   const session = useSession();
   const userId = session.data?.user.id ?? null;
+  const reportError = useCallback((scope: string, err: unknown) => setError(logError(scope, err)), []);
+  /** Sans ce consentement (art. 9 RGPD), rien ne part vers le compte. */
+  const consent = useConsent(cloud, userId, reportError);
   /** La sauvegarde du compte qui correspond au fichier affiché dans chaque emplacement. */
   const [remote, setRemote] = useState<Record<Slot, BackupDto | null>>(NO_REMOTE);
   const [uploading, setUploading] = useState<Record<Slot, boolean>>({ a: false, b: false });
@@ -337,8 +341,8 @@ function Tserohr() {
    * Compte et case à cocher, lus par `pick` sans en dépendre : `pick` reste
    * stable, et le verrou du sélecteur avec lui.
    */
-  const sync = useRef({ userId, keep: keepInAccount });
-  sync.current = { userId, keep: keepInAccount };
+  const sync = useRef({ userId, keep: keepInAccount, consented: consent.given });
+  sync.current = { userId, keep: keepInAccount && consent.given, consented: consent.given };
 
   /** Sauvegardes qu'un dépôt a trouvées déjà dans le compte, pour le dire sous la carte. */
   const alreadyThere = useRef(new Set<string>());
@@ -538,9 +542,10 @@ function Tserohr() {
       const sources = `${fileA.deviceName} ${fmt.dayMonth(fileA.createdAt)}`
         + ` + ${fileB.deviceName} ${fmt.dayMonth(fileB.createdAt)}`;
 
-      // Connecté : enregistrement dans le compte en tâche de fond. Le partage
-      // et l'enregistrement local, eux, sont possibles tout de suite.
-      if (sync.current.userId) {
+      // Connecté, et d'accord pour le stockage : enregistrement dans le compte
+      // en tâche de fond. Le partage et l'enregistrement local, eux, sont
+      // possibles tout de suite.
+      if (sync.current.userId && sync.current.consented) {
         pendingSave.current = {
           file,
           sha256: await sha256Expo(merged.file),
@@ -848,6 +853,13 @@ function Tserohr() {
           onBack={() => setAccountScreen(null)}
           onSignOut={() => void logout()}
           onDeleted={() => setAccountScreen(null)}
+          consented={consent.given}
+          onWithdraw={async () => {
+            await consent.withdraw();
+            // Tout ce que le compte gardait vient d'être effacé.
+            setRemote(NO_REMOTE);
+            setRemoteHistory(null);
+          }}
         />
       ) : (
         <>
@@ -888,6 +900,8 @@ function Tserohr() {
                   lines: { a: cloudLine('a'), b: cloudLine('b') },
                   keepInAccount,
                   onKeepChange: setKeepInAccount,
+                  consent: consent.state,
+                  onConsent: () => void consent.give(),
                 } : undefined}
               />
             ) : (

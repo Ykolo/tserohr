@@ -126,6 +126,12 @@ export interface DownloadLink {
   url: string;
 }
 
+/** Réponse de `GET` et `POST /api/consent`. */
+export interface ConsentDto {
+  /** Date ISO du consentement au dépôt de fichiers, null s'il n'est pas donné. */
+  consentedAt: string | null;
+}
+
 /** Corps d'une réponse d'erreur de l'API. */
 export interface ApiError {
   /** Code stable, à tester côté client (`not_found`, `upload_missing`…). */

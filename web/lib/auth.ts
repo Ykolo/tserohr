@@ -142,7 +142,21 @@ export const auth = betterAuth({
     storage: 'database',
   },
   telemetry: { enabled: false },
+  databaseHooks: {
+    user: {
+      create: {
+        // Le seul chemin de création est l'inscription par e-mail, qui exige
+        // `acceptTerms` (voir `hooks.before`) : la date d'acceptation est
+        // celle de la création.
+        before: async (user) => ({ data: { ...user, termsAcceptedAt: new Date() } }),
+      },
+    },
+  },
   user: {
+    additionalFields: {
+      // Posé par le serveur seul, jamais par le corps de la requête.
+      termsAcceptedAt: { type: 'date', required: false, input: false, returned: false },
+    },
     deleteUser: {
       enabled: true,
       // Les fichiers d'abord : si R2 ne répond pas, le compte reste, et avec
@@ -196,6 +210,16 @@ export const auth = betterAuth({
             message: 'Trop de codes demandés pour cette adresse.',
           }, { 'Retry-After': String(allowance.retryAfterSeconds) });
         }
+      }
+
+      // Pas de compte sans accord explicite aux CGU, à la politique de
+      // confidentialité et à l'âge minimum : la case de l'écran d'inscription
+      // envoie `acceptTerms`. Sa date est posée à la création du compte.
+      if (ctx.path === '/sign-up/email' && (ctx.body as { acceptTerms?: unknown } | undefined)?.acceptTerms !== true) {
+        throw new APIError('BAD_REQUEST', {
+          code: 'TERMS_REQUIRED',
+          message: 'Les CGU et la politique de confidentialité doivent être acceptées.',
+        });
       }
 
       // Sans mot de passe, Better Auth se contente d'une session de moins d'un

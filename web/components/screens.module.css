@@ -550,6 +550,37 @@
   accent-color: var(--accent);
 }
 
+/* Une case d'accord : texte sur plusieurs lignes, case alignée en haut. */
+.agree {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--inkSoft);
+  cursor: pointer;
+}
+.agree input {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 1px 0 0;
+  accent-color: var(--accent);
+}
+.agree a {
+  color: var(--accent);
+}
+.agreeDetail {
+  display: block;
+  margin-top: 4px;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--fainter);
+}
+.consentBlock {
+  margin-top: 18px;
+}
+
 /* --- Historique du compte et enregistrement de la fusion --- */
 
 .entryActions {

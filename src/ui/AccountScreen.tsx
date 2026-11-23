@@ -9,13 +9,14 @@
  * Le déroulé (étapes, appels, renvoi du code) est celui du site :
  * `useAccountFlow`, dans `src/account-flow.ts`.
  */
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { codeSentLead, resendLabel, useAccountFlow, type AccountClient, type AccountStep } from '../account-flow';
 import { emailOtp, signIn, signUp } from '../auth-client';
 import { MIN_PASSWORD } from '../auth-errors';
-import { space, text } from '../theme';
+import { color, font, space, text } from '../theme';
 import { ErrorNotice, Eyebrow, OtpField, PasswordField, PrimaryButton, Segmented, TextField, TextLink } from './kit';
+import { LegalLinks, openLegalPage } from './LegalLinks';
 
 const MODES = [
   { value: 'sign-in', label: 'Se connecter' },
@@ -146,6 +147,27 @@ export function AccountScreen({ onDone }: { onDone: () => void }) {
             </>
           )}
 
+          {step === 'sign-up' && (
+            <Pressable
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: flow.accepted, disabled: busy }}
+              disabled={busy}
+              onPress={() => flow.setAccepted(!flow.accepted)}
+              style={({ pressed }) => [styles.agree, pressed && styles.pressed]}
+            >
+              <View style={[styles.box, flow.accepted && styles.boxOn]}>
+                {flow.accepted && <Text style={styles.boxMark}>✓</Text>}
+              </View>
+              <Text style={styles.agreeLabel}>
+                J’ai 15 ans ou plus, et j’accepte les{' '}
+                <Text style={styles.inlineLink} onPress={() => openLegalPage('/cgu')}>CGU</Text> et la{' '}
+                <Text style={styles.inlineLink} onPress={() => openLegalPage('/confidentialite')}>
+                  politique de confidentialité
+                </Text>.
+              </Text>
+            </Pressable>
+          )}
+
           {flow.error && <ErrorNotice error={flow.error} onDismiss={flow.dismissError} />}
 
           <PrimaryButton label={busy ? 'Un instant…' : ACTIONS[step]} onPress={submit} disabled={busy || !flow.ready} />
@@ -163,6 +185,8 @@ export function AccountScreen({ onDone }: { onDone: () => void }) {
           )}
           {entering && <TextLink label="Continuer sans compte" onPress={onDone} disabled={busy} />}
         </View>
+
+        <LegalLinks />
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -175,4 +199,22 @@ const styles = StyleSheet.create({
   form: { gap: 16, marginTop: 26 },
   // « Mot de passe oublié ? », à droite sous le champ.
   forgot: { alignItems: 'flex-end', marginTop: -6 },
+
+  // La case d'accord, comme « Garder aussi dans le compte » sur l'accueil.
+  agree: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  pressed: { opacity: 0.7 },
+  box: {
+    width: 20,
+    height: 20,
+    marginTop: 1,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: color.outline,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  boxOn: { backgroundColor: color.accent, borderColor: color.accent },
+  boxMark: { fontFamily: font.sansSemi, fontSize: 13, lineHeight: 15, color: color.onAccent },
+  agreeLabel: { flexShrink: 1, fontFamily: font.sans, fontSize: 14, lineHeight: 20, color: color.inkSoft },
+  inlineLink: { color: color.accent, textDecorationLine: 'underline' },
 });
