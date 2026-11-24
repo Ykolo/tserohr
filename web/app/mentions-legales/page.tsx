@@ -28,15 +28,17 @@ export default function MentionsLegales() {
       <p>Le site et son serveur sont hébergés par :</p>
       <ul>
         <li>
-          Vercel Inc., 440 N Barranca Ave #4133, Covina, CA 91723, États-Unis — téléphone : +1 559 288 7060 —{' '}
-          <a href="https://vercel.com">vercel.com</a>
+          Vercel Inc., 440 N Barranca Ave #4133, Covina, CA 91723, États-Unis —{' '}
+          <a href="https://vercel.com/contact">vercel.com/contact</a> —{' '}
+          <a href="mailto:privacy@vercel.com">privacy@vercel.com</a>
         </li>
       </ul>
+      <p>Vercel ne publie pas de numéro de téléphone : il se joint par son formulaire de contact ou par e-mail.</p>
       <p>Autres prestataires techniques :</p>
       <ul>
         <li>
           Fichiers déposés, stockés dans l’Union européenne : Cloudflare, Inc. (service R2), 101 Townsend St, San
-          Francisco, CA 94107, États-Unis — téléphone : +1 650 319 8930 —{' '}
+          Francisco, CA 94107, États-Unis —{' '}
           <a href="https://www.cloudflare.com">cloudflare.com</a>
         </li>
         <li>
