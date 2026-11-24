@@ -6,6 +6,7 @@ import { useRef, useState, type DragEvent } from 'react';
 import type { BackupInfo } from '@core/backup-info';
 import type { ErrorView } from '@core/errors';
 import * as fmt from '@core/format';
+import { CONSENT_DETAIL, CONSENT_LABEL } from '@core/legal';
 import type { ConflictStrategy } from '@core/merge';
 
 import {
@@ -171,6 +172,13 @@ export interface HomeScreenProps {
     lines: Record<Slot, CloudLine | null>;
     keepInAccount: boolean;
     onKeepChange: (keep: boolean) => void;
+    /**
+     * Le consentement au stockage (art. 9 RGPD) : tant qu'il manque, la case
+     * « Garder aussi dans le compte » laisse place à la demande d'accord, et
+     * rien ne part. `unknown` pendant sa lecture.
+     */
+    consent: 'given' | 'missing' | 'unknown';
+    onConsent: () => void;
   };
 }
 
@@ -222,7 +230,7 @@ export function HomeScreen({
           ))}
         </div>
 
-        {sync && (
+        {sync?.consent === 'given' && (
           <label className={s.keep}>
             <input
               type="checkbox"
@@ -233,10 +241,22 @@ export function HomeScreen({
             <span>Garder aussi dans le compte les fichiers choisis</span>
           </label>
         )}
+        {sync?.consent === 'missing' && (
+          <label className={`${s.agree} ${s.consentBlock}`}>
+            <input type="checkbox" checked={false} onChange={() => sync.onConsent()} disabled={busy} />
+            <span>
+              {CONSENT_LABEL}
+              <span className={s.agreeDetail}>
+                {CONSENT_DETAIL}{' '}
+                <a href="/confidentialite" target="_blank" rel="noopener">Politique de confidentialité</a>
+              </span>
+            </span>
+          </label>
+        )}
 
         <p className={s.privacy}>
-          {sync
-            ? 'Les sauvegardes sont lues et fusionnées dans ce navigateur. Celles gardées dans le compte y sont aussi déposées, pour les retrouver sur tes autres appareils.'
+          {sync?.consent === 'given'
+            ?'Les sauvegardes sont lues et fusionnées dans ce navigateur. Celles gardées dans le compte y sont aussi déposées, pour les retrouver sur tes autres appareils.'
             : 'Les sauvegardes sont lues et fusionnées dans ce navigateur : elles ne sont envoyées nulle part.'}
         </p>
       </div>

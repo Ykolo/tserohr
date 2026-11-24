@@ -8,7 +8,7 @@ import {
 import { MIN_PASSWORD } from '../src/auth-errors';
 
 const fields = (over: Partial<AccountFields> = {}): AccountFields => ({
-  email: 'a@example.test', password: '', confirmation: '', otp: '', ...over,
+  email: 'a@example.test', password: '', confirmation: '', otp: '', accepted: true, ...over,
 });
 const good = 'x'.repeat(MIN_PASSWORD);
 
@@ -50,6 +50,8 @@ describe('canSubmit', () => {
     expect(canSubmit('sign-up', fields({ password: good, confirmation: good }))).toBe(true);
     expect(canSubmit('sign-up', fields({ password: good, confirmation: `${good}!` }))).toBe(false);
     expect(canSubmit('sign-up', fields({ password: 'court', confirmation: 'court' }))).toBe(false);
+    // Sans l'accord aux CGU, à la confidentialité et à l'âge minimum.
+    expect(canSubmit('sign-up', fields({ password: good, confirmation: good, accepted: false }))).toBe(false);
   });
 
   test('saisie du code : six chiffres', () => {

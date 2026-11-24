@@ -146,15 +146,23 @@ async function authCall(path: string, body: unknown, cookie?: string, method = '
 
 const testEmail = (label: string) => `routes-${label}-${Date.now()}-${Math.floor(Math.random() * 1e6)}@example.test`;
 
-/** Inscription complète : compte créé, code reçu, adresse confirmée, session ouverte. */
-async function signUp(label: string): Promise<User> {
+/**
+ * Inscription complète : compte créé, code reçu, adresse confirmée, session
+ * ouverte, et, sauf `consent: false`, consentement au stockage donné.
+ */
+async function signUp(label: string, { consent = true } = {}): Promise<User> {
   const email = testEmail(label);
   const password = crypto.randomUUID();
-  const created = await authCall('/sign-up/email', { email, password, name: label });
+  const created = await authCall('/sign-up/email', { acceptTerms: true, email, password, name: label });
   if (created.status !== 200) throw new Error(`inscription ${label} : ${created.status} ${JSON.stringify(created.body)}`);
   const verified = await authCall('/email-otp/verify-email', { email, otp: await codeFor(email, 'confirmation') });
   if (verified.status !== 200 || !verified.cookie) throw new Error(`confirmation ${label} : ${verified.status} ${JSON.stringify(verified.body)}`);
-  return { id: verified.body.user.id, cookie: verified.cookie, password, email };
+  const user = { id: verified.body.user.id, cookie: verified.cookie, password, email };
+  if (consent) {
+    const given = await call(user, 'POST', '/api/consent');
+    if (given.status !== 200) throw new Error(`consentement ${label} : ${given.status} ${JSON.stringify(given.body)}`);
+  }
+  return user;
 }
 
 const SHA = (c: string) => c.repeat(64);
@@ -200,6 +208,14 @@ describe.skipIf(!enabled)('routes de l’API', () => {
       '/api/merges/:id/confirm': { POST: (await import('@/app/api/merges/[id]/confirm/route')).POST as unknown as Handler },
       '/api/merges/:id/promote': { POST: (await import('@/app/api/merges/[id]/promote/route')).POST as unknown as Handler },
       '/api/files/:kind/:id': { GET: (await import('@/app/api/files/[kind]/[id]/route')).GET as unknown as Handler },
+      '/api/consent': await (async () => {
+        const consent = await import('@/app/api/consent/route');
+        return {
+          GET: consent.GET as unknown as Handler,
+          POST: consent.POST as unknown as Handler,
+          DELETE: consent.DELETE as unknown as Handler,
+        };
+      })(),
     };
     alice = await signUp('alice');
     bob = await signUp('bob');
@@ -317,7 +333,7 @@ describe.skipIf(!enabled)('routes de l’API', () => {
     extraEmails.push(email);
     const password = crypto.randomUUID();
 
-    const created = await authCall('/sign-up/email', { email, password, name: 'confirme' });
+    const created = await authCall('/sign-up/email', { acceptTerms: true, email, password, name: 'confirme' });
     expect(created.status).toBe(200);
     expect(created.body.token).toBeNull();
     const code = await codeFor(email, 'confirmation');
@@ -345,7 +361,7 @@ describe.skipIf(!enabled)('routes de l’API', () => {
   test('code saisi trop de fois : bloqué, même juste', async () => {
     const email = testEmail('essais');
     extraEmails.push(email);
-    await authCall('/sign-up/email', { email, password: crypto.randomUUID(), name: 'essais' });
+    await authCall('/sign-up/email', { acceptTerms: true, email, password: crypto.randomUUID(), name: 'essais' });
     const code = await codeFor(email, 'confirmation');
     const wrong = code === '000000' ? '111111' : '000000';
     for (let i = 0; i < 5; i++) {
@@ -358,10 +374,10 @@ describe.skipIf(!enabled)('routes de l’API', () => {
   test('adresse déjà prise : même réponse qu’une inscription, et un e-mail d’avertissement', async () => {
     const email = testEmail('double');
     extraEmails.push(email);
-    await authCall('/sign-up/email', { email, password: crypto.randomUUID(), name: 'double' });
+    await authCall('/sign-up/email', { acceptTerms: true, email, password: crypto.randomUUID(), name: 'double' });
     await codeFor(email, 'confirmation');
 
-    const again = await authCall('/sign-up/email', { email, password: crypto.randomUUID(), name: 'double' });
+    const again = await authCall('/sign-up/email', { acceptTerms: true, email, password: crypto.randomUUID(), name: 'double' });
     expect(again).toMatchObject({ status: 200, body: { token: null } });
     for (let i = 0; i < 100 && !inbox.get(email)!.some((m) => m.subject.includes('déjà un compte')); i++) {
       await new Promise((r) => setTimeout(r, 100));
@@ -420,5 +436,54 @@ describe.skipIf(!enabled)('routes de l’API', () => {
   test('connexion par code seul : fermée', async () => {
     expect((await authCall('/sign-in/email-otp', { email: alice.email, otp: '123456' })).status).toBe(404);
     expect((await authCall('/email-otp/send-verification-otp', { email: alice.email, type: 'sign-in' })).status).toBe(404);
+  });
+
+  // --- Accords : CGU à l'inscription, consentement au stockage ----------------
+
+  test('inscription sans accepter les CGU : refusée ; acceptée, sa date est gardée', async () => {
+    const email = testEmail('cgu');
+    extraEmails.push(email);
+    const password = crypto.randomUUID();
+    const refused = await authCall('/sign-up/email', { email, password, name: 'cgu' });
+    expect(refused).toMatchObject({ status: 400, body: { code: 'TERMS_REQUIRED' } });
+    expect(inbox.get(email)).toBeUndefined();
+
+    expect((await authCall('/sign-up/email', { acceptTerms: true, email, password, name: 'cgu' })).status).toBe(200);
+    const { prisma } = await import('@/lib/db');
+    const row = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
+    expect(row?.termsAcceptedAt).toBeInstanceOf(Date);
+    expect(row?.sensitiveConsentAt).toBeNull();
+  });
+
+  test('consentement : aucun envoi sans lui, et son retrait efface tous les fichiers', async () => {
+    const user = await signUp('accord', { consent: false });
+    extraEmails.push(user.email);
+    const { prisma } = await import('@/lib/db');
+
+    expect((await call(user, 'GET', '/api/consent')).body).toEqual({ consentedAt: null });
+    const blocked = await call(user, 'POST', '/api/uploads', { kind: 'backup', size: 1010, sha256: SHA('0') });
+    expect(blocked).toMatchObject({ status: 403, body: { error: 'consent_required' } });
+
+    const given = await call(user, 'POST', '/api/consent');
+    expect(given.status).toBe(200);
+    expect(typeof given.body.consentedAt).toBe('string');
+    // Donné deux fois : la première date reste.
+    expect((await call(user, 'POST', '/api/consent')).body.consentedAt).toBe(given.body.consentedAt);
+
+    const a = await deposit(user, 'a', 1011);
+    expect(await saveMerge(user, {}, 2011)).toMatchObject({ status: 200 });
+    const prefix = (p: string) => [...objects.keys()].filter((k) => k.startsWith(`${p}/${user.id}/`));
+    expect(prefix('backups')).toHaveLength(1);
+    expect(prefix('merges')).toHaveLength(1);
+
+    expect((await call(user, 'DELETE', '/api/consent')).status).toBe(204);
+    expect(prefix('backups')).toHaveLength(0);
+    expect(prefix('merges')).toHaveLength(0);
+    expect(await prisma.backup.count({ where: { id: a.id } })).toBe(0);
+    expect(await prisma.merge.count({ where: { userId: user.id } })).toBe(0);
+    expect((await call(user, 'GET', '/api/consent')).body).toEqual({ consentedAt: null });
+    expect((await call(user, 'POST', '/api/uploads', { kind: 'backup', size: 1012, sha256: SHA('2') })).status).toBe(403);
+
+    await prisma.rateLimit.deleteMany({ where: { key: `upload:${user.id}` } });
   });
 });

@@ -147,6 +147,23 @@ avant, et rien ne quitte l'appareil. Avec lui, on retrouve sur un appareil ce
 qu'on a déposé depuis un autre : la tablette dépose sa sauvegarde en A, le
 téléphone la sienne en B, et l'un ou l'autre fusionne.
 
+**Accords.** L'inscription exige une case « 15 ans ou plus, CGU et
+confidentialité » (`acceptTerms`, sans quoi `TERMS_REQUIRED`), datée en base
+(`termsAcceptedAt`). Une sauvegarde pouvant révéler des convictions
+religieuses (art. 9 RGPD), rien ne part vers le compte sans un consentement
+explicite, demandé à l'accueil à la place de la case « Garder aussi dans le
+compte » et daté (`sensitiveConsentAt`) : `POST /api/uploads` et la copie en A
+répondent `403 consent_required` sans lui. « Retirer mon accord », dans « Mon
+compte », efface tous les fichiers du compte et garde le compte
+(`DELETE /api/consent`). Le texte commun est dans `src/legal.ts`, l'état dans
+`src/consent.ts`, la vérification serveur dans `web/lib/consent.ts`.
+
+**Où.** Le bucket `tserohr-backups-eu`, de juridiction UE
+(`R2_JURISDICTION=eu`, point d'accès `{compte}.eu.r2.cloudflarestorage.com`),
+garde les fichiers dans l'Union européenne. Son CORS et sa règle de cycle de
+vie (`backups/` effacé après 30 jours) se relisent avec
+`wrangler r2 bucket cors list` et `lifecycle list`, `--jurisdiction eu`.
+
 **Ce qui est envoyé.** Les fichiers `.jwlibrary` que l'on choisit de garder
 dans le compte (case « Garder aussi dans le compte »), et les fusions
 produites. Ils vont directement de l'appareil à Cloudflare R2, par une URL
@@ -168,6 +185,9 @@ envoyés par e-mail ne sont gardés en base que sous forme d’empreinte.
 | Sauvegarde déposée (emplacements A et B) | 30 jours, puis effacée par la règle de cycle de vie de R2. Elle quitte son emplacement dès qu'une fusion la consomme ou qu'une autre la remplace |
 | Fusion enregistrée | Les 30 plus récentes par compte. Au-delà, la plus ancienne part, fichier et ligne |
 | Envoi commencé mais jamais confirmé | 1 heure au plus : le ménage quotidien l'efface |
+| Sessions et codes expirés | Effacés par le ménage quotidien |
+| Compte jamais confirmé | 7 jours, puis effacé par le ménage quotidien |
+| Compteurs de débit (IP, compte, empreinte d'adresse) | 24 heures au plus |
 
 Une sauvegarde déjà présente dans l'emplacement visé (même empreinte) n'est
 pas renvoyée. On peut aussi placer une fusion dans l'emplacement A pour

@@ -20,6 +20,7 @@ import { MAX_UPLOAD_BYTES, type ExistingUpload, type UploadTicket } from '@core/
 
 import { apiError, readBody, sha256Schema, slotSchema, toBackupDto } from '@/lib/api';
 import { requireUser } from '@/lib/auth';
+import { requireConsent } from '@/lib/consent';
 import { prisma } from '@/lib/db';
 import { takeUploadToken, UPLOADS_PER_WINDOW } from '@/lib/limits';
 import { backupKey, mergeKey, presignPut } from '@/lib/r2';
@@ -37,6 +38,9 @@ export async function POST(req: Request) {
   if (user instanceof Response) return user;
   const input = await readBody(req, body);
   if (input instanceof Response) return input;
+  // Rien ne part vers le compte sans consentement explicite (art. 9 RGPD).
+  const refused = await requireConsent(user.id);
+  if (refused) return refused;
 
   if (input.kind === 'backup' && input.slot) {
     const same = await prisma.backup.findFirst({

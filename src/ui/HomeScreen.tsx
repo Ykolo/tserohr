@@ -2,13 +2,16 @@
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import type { BackupInfo } from '../backup-info';
+import type { ConsentState } from '../consent';
 import type { ErrorView } from '../errors';
+import { CONSENT_DETAIL, CONSENT_LABEL } from '../legal';
 import type { ConflictStrategy } from '../merge';
 import * as fmt from '../format';
 import { color, font, radius, space } from '../theme';
 import {
   Card, DashedButton, ErrorNotice, Eyebrow, PlusRule, PrimaryButton, ProgressBar, Segmented, TextLink,
 } from './kit';
+import { LegalLinks, openLegalPage } from './LegalLinks';
 
 const STRATEGIES = [
   { value: 'newest', label: 'Version récente' },
@@ -127,6 +130,13 @@ export interface HomeScreenProps {
     lines: Record<'a' | 'b', CloudLine | null>;
     keepInAccount: boolean;
     onKeepChange: (keep: boolean) => void;
+    /**
+     * Le consentement au stockage (art. 9 RGPD) : tant qu'il manque, la case
+     * « Garder aussi dans le compte » laisse place à la demande d'accord, et
+     * rien ne part. `unknown` pendant sa lecture.
+     */
+    consent: ConsentState;
+    onConsent: () => void;
   };
 }
 
@@ -174,7 +184,7 @@ export function HomeScreen({
           )}
         </View>
 
-        {sync && (
+        {sync?.consent === 'given' && (
           <Pressable
             accessibilityRole="checkbox"
             accessibilityState={{ checked: sync.keepInAccount, disabled: busy }}
@@ -188,6 +198,27 @@ export function HomeScreen({
             <Text style={styles.keepLabel}>Garder aussi dans le compte les fichiers choisis</Text>
           </Pressable>
         )}
+        {sync?.consent === 'missing' && (
+          <View style={styles.consent}>
+            <Pressable
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: false, disabled: busy }}
+              accessibilityHint={CONSENT_DETAIL}
+              disabled={busy}
+              onPress={sync.onConsent}
+              style={({ pressed }) => [styles.agree, pressed && styles.pressedCard, busy && styles.dim]}
+            >
+              <View style={[styles.box, styles.agreeBox]} />
+              <View style={styles.agreeText}>
+                <Text style={styles.keepLabel}>{CONSENT_LABEL}</Text>
+                <Text style={styles.hint}>{CONSENT_DETAIL}</Text>
+              </View>
+            </Pressable>
+            <TextLink small label="Politique de confidentialité" onPress={() => openLegalPage('/confidentialite')} />
+          </View>
+        )}
+
+        <LegalLinks />
       </ScrollView>
 
       <View style={styles.footer}>
@@ -300,4 +331,9 @@ const styles = StyleSheet.create({
   boxOn: { backgroundColor: color.accent, borderColor: color.accent },
   boxMark: { fontFamily: font.sansSemi, fontSize: 13, lineHeight: 15, color: color.onAccent },
   keepLabel: { flexShrink: 1, fontFamily: font.sans, fontSize: 14, color: color.inkSoft },
+
+  consent: { marginTop: 18, gap: 8, alignItems: 'flex-start' },
+  agree: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  agreeBox: { marginTop: 1 },
+  agreeText: { flexShrink: 1, gap: 4 },
 });

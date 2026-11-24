@@ -90,6 +90,11 @@ model User {
   email         String
   emailVerified Boolean   @default(false)
   image         String?
+  // Hors Better Auth : la date d'acceptation des CGU à l'inscription
+  // (`acceptTerms`), et celle du consentement explicite (art. 9 RGPD) qui
+  // autorise le dépôt de fichiers. Null : pas d'accord, pas d'envoi possible.
+  termsAcceptedAt    DateTime?
+  sensitiveConsentAt DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @default(now()) @updatedAt
   sessions      Session[]

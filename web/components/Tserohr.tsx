@@ -15,6 +15,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { inspectBackup, type BackupInfo } from '@core/backup-info';
 import { describeKeptSlot, type BackupDto, type MergeDto, type MergeMeta, type MergePage } from '@core/cloud/types';
+import { useConsent } from '@core/consent';
 import { isCancellation, logError, logInfo, stopwatch, type ErrorView } from '@core/errors';
 import * as fmt from '@core/format';
 import { deferred, ReadAborted } from '@core/deferred';
@@ -254,6 +255,9 @@ export function Tserohr() {
   // --- Synchronisation des emplacements, quand un compte est connecté ---
 
   const userId = session.data?.user.id ?? null;
+  const reportError = useCallback((scope: string, err: unknown) => setError(logError(scope, err)), []);
+  /** Sans ce consentement (art. 9 RGPD), rien ne part vers le compte. */
+  const consent = useConsent(cloud, userId, reportError);
   /** La sauvegarde du compte qui correspond au fichier affiché dans chaque emplacement. */
   const [remote, setRemote] = useState<Record<Slot, BackupDto | null>>(NO_REMOTE);
   const [uploading, setUploading] = useState<Record<Slot, boolean>>({ a: false, b: false });
@@ -335,7 +339,7 @@ export function Tserohr() {
     const pick = ++picks.current[slot];
     setRemote((r) => ({ ...r, [slot]: null }));
     setUploading((u) => ({ ...u, [slot]: false }));
-    const meta = userId && keepInAccount ? deferred<BackupInfo>() : null;
+    const meta = userId && consent.given && keepInAccount ? deferred<BackupInfo>() : null;
     if (meta) void keepRemotely(slot, picked, meta.promise, pick);
     const info = await read(slot, {
       name: picked.name,
@@ -348,7 +352,7 @@ export function Tserohr() {
     if (!meta) return;
     if (info && picks.current[slot] === pick) meta.resolve(info);
     else meta.reject(new ReadAborted());
-  }, [read, userId, keepInAccount, keepRemotely]);
+  }, [read, userId, consent.given, keepInAccount, keepRemotely]);
 
   const removeRemote = useCallback(async (slot: Slot) => {
     setError(null);
@@ -523,9 +527,9 @@ export function Tserohr() {
       const sources = `${fileA.deviceName} ${fmt.dayMonth(fileA.createdAt)}`
         + ` + ${fileB.deviceName} ${fmt.dayMonth(fileB.createdAt)}`;
 
-      // Connecté : enregistrement dans le compte en tâche de fond. Le
-      // téléchargement, lui, est déjà possible.
-      if (userId) {
+      // Connecté, et d'accord pour le stockage : enregistrement dans le compte
+      // en tâche de fond. Le téléchargement, lui, est déjà possible.
+      if (userId && consent.given) {
         pendingSave.current = {
           file,
           sha256: await sha256Web(merged.file),
@@ -565,7 +569,7 @@ export function Tserohr() {
       setBusy(false);
       setProgress(null);
     }
-  }, [fileA, fileB, strategy, userId, remote, saveToAccount]);
+  }, [fileA, fileB, strategy, userId, consent.given, remote, saveToAccount]);
 
   const download = useCallback(() => {
     if (!result) return;
@@ -648,6 +652,13 @@ export function Tserohr() {
                   onBack={() => switchTab('merge')}
                   onSignOut={() => void logout()}
                   onDeleted={() => switchTab('merge')}
+                  consented={consent.given}
+                  onWithdraw={async () => {
+                    await consent.withdraw();
+                    // Tout ce que le compte gardait vient d'être effacé.
+                    setRemote(NO_REMOTE);
+                    setRemoteHistory(null);
+                  }}
                 />
               ) : session.isPending ? null : (
                 <AccountScreen onDone={() => switchTab('merge')} />
@@ -669,6 +680,8 @@ export function Tserohr() {
                   lines: { a: cloudLine('a'), b: cloudLine('b') },
                   keepInAccount,
                   onKeepChange: setKeepInAccount,
+                  consent: consent.state,
+                  onConsent: () => void consent.give(),
                 } : undefined}
               />
             ) : (

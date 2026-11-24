@@ -15,7 +15,8 @@ export default function Cgu() {
       <h2>1. Objet</h2>
       <p>
         Ces conditions encadrent l’utilisation du site tserohr.com et de l’application Tserohr (ensemble, « le
-        service »), édités par {EDITOR.name}. Utiliser le service vaut acceptation de ces conditions.
+        service »), édités à titre non professionnel par {EDITOR.name}. Elles sont acceptées à la création d’un
+        compte ; utiliser le service sans compte vaut aussi acceptation.
       </p>
 
       <h2>2. Le service</h2>
@@ -31,7 +32,11 @@ export default function Cgu() {
 
       <h2>3. Compte</h2>
       <ul>
-        <li>Le compte est réservé aux personnes de 15 ans et plus, ou plus jeunes avec l’accord d’un parent.</li>
+        <li>Le compte est réservé aux personnes de 15 ans et plus.</li>
+        <li>
+          Garder des fichiers dans le compte demande un accord explicite à leur stockage, qui peut être retiré à tout
+          moment depuis « Mon compte » ; les fichiers sont alors effacés.
+        </li>
         <li>Vous fournissez une adresse e-mail valide et gardez votre mot de passe confidentiel.</li>
         <li>
           Vous pouvez supprimer votre compte à tout moment depuis « Mon compte ». Tous vos fichiers sont alors

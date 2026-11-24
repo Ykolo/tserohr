@@ -99,6 +99,11 @@ const VIEWS: Record<string, Omit<ErrorView, 'technical'>> = {
     message: 'Tes fichiers n’ont pas pu être effacés du serveur : ton compte est donc conservé.',
     hint: 'Réessaie dans quelques minutes.',
   },
+  TERMS_REQUIRED: {
+    title: 'Accord requis',
+    message: 'Pour créer un compte, il faut avoir 15 ans ou plus et accepter les CGU et la politique de confidentialité.',
+    hint: 'Coche la case sous le formulaire. Si elle n’apparaît pas, mets l’app à jour.',
+  },
   SESSION_EXPIRED: {
     title: 'Session expirée',
     message: 'Ta session a expiré.',

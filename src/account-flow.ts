@@ -46,6 +46,8 @@ export interface AccountFields {
   password: string;
   confirmation: string;
   otp: string;
+  /** Case « 15 ans ou plus, CGU et confidentialité » de l'inscription. */
+  accepted: boolean;
 }
 
 /** Le bouton principal de l'étape peut-il partir ? */
@@ -54,7 +56,7 @@ export function canSubmit(step: AccountStep, f: AccountFields): boolean {
   const newPassword = f.password.length >= MIN_PASSWORD && f.confirmation === f.password;
   switch (step) {
     case 'sign-in': return email && f.password.length > 0;
-    case 'sign-up': return email && newPassword;
+    case 'sign-up': return email && newPassword && f.accepted;
     case 'verify': return email && isOtpComplete(f.otp);
     case 'forgot-email': return email;
     case 'forgot-reset': return email && isOtpComplete(f.otp) && newPassword;
@@ -112,7 +114,8 @@ type Call = Promise<{ error: AuthFailure | null }>;
  */
 export interface AccountClient {
   signIn(body: { email: string; password: string }): Call;
-  signUp(body: { email: string; password: string; name: string }): Call;
+  /** `acceptTerms` : le serveur refuse l'inscription sans lui (`TERMS_REQUIRED`). */
+  signUp(body: { email: string; password: string; name: string; acceptTerms: true }): Call;
   verifyEmail(body: { email: string; otp: string }): Call;
   sendVerificationOtp(body: { email: string }): Call;
   requestPasswordReset(body: { email: string }): Call;
@@ -131,6 +134,7 @@ export function useAccountFlow(client: AccountClient, onDone: () => void) {
   const [password, setPassword] = useState('');
   const [confirmation, setConfirmation] = useState('');
   const [otp, setOtpRaw] = useState('');
+  const [accepted, setAccepted] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<ErrorView | null>(null);
   const cooldown = useResendCooldown();
@@ -180,7 +184,7 @@ export function useAccountFlow(client: AccountClient, onDone: () => void) {
   };
 
   const submit = async () => {
-    if (busy || !canSubmit(step, { email, password, confirmation, otp })) return;
+    if (busy || !canSubmit(step, { email, password, confirmation, otp, accepted })) return;
     switch (step) {
       case 'sign-in': {
         let unverified = false;
@@ -199,6 +203,7 @@ export function useAccountFlow(client: AccountClient, onDone: () => void) {
           // Better Auth exige un nom ; on ne le demande pas pour garder le
           // formulaire court, la partie locale de l'adresse en tient lieu.
           name: address.split('@')[0] || address,
+          acceptTerms: true,
         }));
         if (ok) { setVerifyFrom('sign-up'); awaitCode('verify'); }
         return;
@@ -237,10 +242,11 @@ export function useAccountFlow(client: AccountClient, onDone: () => void) {
     password, setPassword,
     confirmation, setConfirmation,
     otp, setOtp: (value: string) => setOtpRaw(normalizeOtp(value)),
+    accepted, setAccepted,
     busy,
     error,
     dismissError: () => setError(null),
-    ready: canSubmit(step, { email, password, confirmation, otp }),
+    ready: canSubmit(step, { email, password, confirmation, otp, accepted }),
     mismatch: choosingPassword ? confirmationError(password, confirmation) : null,
     submit,
     resend,
