@@ -35,8 +35,9 @@ export default function MentionsLegales() {
       <p>Autres prestataires techniques :</p>
       <ul>
         <li>
-          Fichiers déposés : Cloudflare, Inc. (service R2), 101 Townsend St, San Francisco, CA 94107, États-Unis —
-          téléphone : +1 650 319 8930 — <a href="https://www.cloudflare.com">cloudflare.com</a>
+          Fichiers déposés, stockés dans l’Union européenne : Cloudflare, Inc. (service R2), 101 Townsend St, San
+          Francisco, CA 94107, États-Unis — téléphone : +1 650 319 8930 —{' '}
+          <a href="https://www.cloudflare.com">cloudflare.com</a>
         </li>
         <li>
           Base de données : Neon, LLC (groupe Databricks), États-Unis — <a href="https://neon.com">neon.com</a>

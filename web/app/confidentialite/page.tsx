@@ -120,7 +120,7 @@ export default function Confidentialite() {
         rows={[
           ['Vercel', 'Hébergement du site et du serveur', 'Serveur à Francfort (UE) ; société établie aux États-Unis'],
           ['Neon (groupe Databricks)', 'Base de données (comptes et métadonnées)', 'Francfort (UE) ; société établie aux États-Unis'],
-          ['Cloudflare (R2)', 'Stockage des fichiers déposés', 'Amérique du Nord (États-Unis)'],
+          ['Cloudflare (R2)', 'Stockage des fichiers déposés', 'Union européenne (juridiction UE) ; société établie aux États-Unis'],
           ['Resend', 'Envoi des e-mails (codes de vérification)', 'États-Unis'],
         ]}
       />

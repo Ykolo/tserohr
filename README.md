@@ -158,10 +158,11 @@ compte », efface tous les fichiers du compte et garde le compte
 (`DELETE /api/consent`). Le texte commun est dans `src/legal.ts`, l'état dans
 `src/consent.ts`, la vérification serveur dans `web/lib/consent.ts`.
 
-**Où.** Un bucket R2 de juridiction UE (`R2_JURISDICTION=eu`, point d'accès
-`{compte}.eu.r2.cloudflarestorage.com`) garde les fichiers dans l'Union
-européenne. `web/scripts/move-r2.ts` copie une fois les fichiers d'un ancien
-bucket vers le nouveau, sous les mêmes clés.
+**Où.** Le bucket `tserohr-backups-eu`, de juridiction UE
+(`R2_JURISDICTION=eu`, point d'accès `{compte}.eu.r2.cloudflarestorage.com`),
+garde les fichiers dans l'Union européenne. Son CORS et sa règle de cycle de
+vie (`backups/` effacé après 30 jours) se relisent avec
+`wrangler r2 bucket cors list` et `lifecycle list`, `--jurisdiction eu`.
 
 **Ce qui est envoyé.** Les fichiers `.jwlibrary` que l'on choisit de garder
 dans le compte (case « Garder aussi dans le compte »), et les fusions
