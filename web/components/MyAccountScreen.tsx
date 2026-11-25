@@ -1,13 +1,15 @@
 /**
- * Mon compte : l'adresse du compte, la déconnexion, et tout en bas la
- * suppression du compte.
+ * Mon compte : qui est connecté et la déconnexion, puis, chacun dans sa
+ * carte, l'accord de stockage des fichiers et la suppression du compte.
  *
  * La suppression passe par une boîte de confirmation (`<dialog>` modal) qui
  * dit ce qui part et demande le mot de passe : le serveur l'exige aussi, et
- * n'efface le compte qu'une fois les fichiers effacés.
+ * n'efface le compte qu'une fois les fichiers effacés. Un e-mail confirme
+ * ensuite la suppression.
  */
 'use client';
 
+import { Check, LogOut } from 'lucide-react';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 
 import { describeAuthError } from '@core/auth-errors';
@@ -15,12 +17,12 @@ import { logError, type ErrorView } from '@core/errors';
 
 import { deleteUser } from '@/lib/auth-client';
 
-import { DangerButton, ErrorNotice, Eyebrow, PasswordField, SecondaryButton, TextButton } from './kit';import s from './screens.module.css';
+import { DangerButton, ErrorNotice, Eyebrow, PasswordField, SecondaryButton, TextButton } from './kit';
+import s from './screens.module.css';
 
-export function MyAccountScreen({ email, busy, onBack, onSignOut, onDeleted, consented, onWithdraw }: {
+export function MyAccountScreen({ email, busy, onSignOut, onDeleted, consented, onWithdraw }: {
   email: string;
   busy: boolean;
-  onBack: () => void;
   onSignOut: () => void;
   onDeleted: () => void;
   /** Le consentement au stockage des fichiers (art. 9 RGPD) est-il donné ? */
@@ -29,6 +31,7 @@ export function MyAccountScreen({ email, busy, onBack, onSignOut, onDeleted, con
   onWithdraw: () => Promise<void>;
 }) {
   const [confirming, setConfirming] = useState(false);
+  const initial = email.trim().charAt(0).toUpperCase() || '?';
 
   return (
     <div className={s.screen}>
@@ -36,24 +39,31 @@ export function MyAccountScreen({ email, busy, onBack, onSignOut, onDeleted, con
         <header className={s.header}>
           <Eyebrow>Compte Tserohr</Eyebrow>
           <h1 className={s.title}>Mon compte</h1>
-          <p className={s.lead}>
-            Connecté en tant que <strong className={s.deleteEmail}>{email}</strong>.
-          </p>
         </header>
 
-        <div className={s.authForm}>
-          <SecondaryButton label="Se déconnecter" onClick={onSignOut} disabled={busy} />
-          <TextButton label="Retour" onClick={onBack} disabled={busy} />
-        </div>
+        <section className={s.accountCard} aria-label="Compte connecté">
+          <div className={s.identity}>
+            <span className={s.avatar} aria-hidden>{initial}</span>
+            <div className={s.identityText}>
+              <span className={s.identityLabel}>Connecté avec</span>
+              <span className={s.identityEmail}>{email}</span>
+            </div>
+          </div>
+          <button type="button" className={s.accountRow} onClick={onSignOut} disabled={busy}>
+            <LogOut size={18} aria-hidden />
+            Se déconnecter
+          </button>
+        </section>
 
         {consented && <WithdrawConsent busy={busy} onWithdraw={onWithdraw} />}
 
-        <section className={s.dangerZone} aria-labelledby="danger-zone-title">
-          <h2 id="danger-zone-title" className={s.dangerTitle}>Supprimer mon compte</h2>
-          <p className={s.deleteNote}>
-            Efface le compte, les sauvegardes déposées et les fusions enregistrées. Définitif.
+        <section className={`${s.accountSection} ${s.accountSectionDanger}`} aria-labelledby="delete-zone-title">
+          <h2 id="delete-zone-title" className={s.sectionTitle}>Supprimer mon compte</h2>
+          <p className={s.sectionText}>
+            Efface le compte, les sauvegardes déposées et les fusions enregistrées. C’est définitif ; un e-mail te
+            le confirmera.
           </p>
-          <DangerButton solid label="Supprimer mon compte" onClick={() => setConfirming(true)} disabled={busy} />
+          <DangerButton label="Supprimer mon compte" onClick={() => setConfirming(true)} disabled={busy} />
         </section>
       </div>
 
@@ -88,11 +98,14 @@ function WithdrawConsent({ busy, onWithdraw }: { busy: boolean; onWithdraw: () =
   };
 
   return (
-    <section className={s.dangerZone} aria-labelledby="consent-title">
-      <h2 id="consent-title" className={s.dangerTitle}>Fichiers gardés dans le compte</h2>
-      <p className={s.deleteNote}>
-        Tu as accepté que tes sauvegardes et tes fusions soient stockées dans ton compte. Retirer cet accord les efface
-        toutes du serveur ; le compte, lui, reste.
+    <section className={s.accountSection} aria-labelledby="consent-title">
+      <div className={s.sectionHead}>
+        <h2 id="consent-title" className={s.sectionTitle}>Fichiers gardés dans le compte</h2>
+        <span className={s.badgeOn}><Check size={13} strokeWidth={2.6} aria-hidden />Activé</span>
+      </div>
+      <p className={s.sectionText}>
+        Tes sauvegardes et tes fusions sont stockées dans ton compte, pour les retrouver sur tes autres appareils.
+        Retirer ton accord les efface toutes du serveur ; le compte, lui, reste.
       </p>
       {asking ? (
         <>

@@ -657,13 +657,15 @@ export function Tserohr() {
         />
       ) : (
         <>
+          {/* Écran plein : contenu et onglets. Les liens légaux viennent en
+              dessous, et ne paraissent qu'en faisant défiler. */}
+          <div className={s.frame}>
           <div className={s.content}>
             {tab === 'account' ? (
               session.data ? (
                 <MyAccountScreen
                   email={session.data.user.email}
                   busy={busy}
-                  onBack={() => switchTab('merge')}
                   onSignOut={() => void logout()}
                   onDeleted={() => switchTab('merge')}
                   consented={consent.given}
@@ -720,6 +722,7 @@ export function Tserohr() {
             )}
           </div>
           <TabBar signedIn={!!session.data} value={tab} onChange={switchTab} disabled={busy} />
+          </div>
           <footer className={s.legalFooter}>
             <LegalLinks />
           </footer>

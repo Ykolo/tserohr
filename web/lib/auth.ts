@@ -19,7 +19,8 @@ import { after } from 'next/server';
 import { prisma } from '@/lib/db';
 import { sendEmail } from '@/lib/email';
 import {
-  existingAccountEmail, OTP_TTL_SECONDS, passwordChangedEmail, passwordResetEmail, verificationEmail,
+  accountDeletedEmail, existingAccountEmail, OTP_TTL_SECONDS, passwordChangedEmail, passwordResetEmail,
+  verificationEmail,
 } from '@/lib/email-templates';
 import { takeEmailCodeToken } from '@/lib/limits';
 import { purgeUserFiles } from '@/lib/purge';
@@ -175,7 +176,12 @@ export const auth = betterAuth({
       },
       // Un envoi signé avant la suppression a pu arriver entre-temps : on
       // repasse. Le compte n'existe plus, un échec ne peut que se journaliser.
+      // Un e-mail confirme la suppression ; s'il ne part pas, la suppression
+      // reste faite.
       afterDelete: async (user) => {
+        inBackground(sendEmail({ to: user.email, ...accountDeletedEmail() }).catch((err: unknown) => {
+          console.error('[e-mail] confirmation de suppression du compte non envoyée', err);
+        }));
         try {
           await purgeUserFiles(user.id, { attempts: 2 });
         } catch (err) {
