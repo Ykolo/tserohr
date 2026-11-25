@@ -28,7 +28,7 @@ import { cloud } from '@/lib/cloud';
 import { addToHistory, loadFile, loadHistory, storedFiles, storeFile, type HistoryEntry } from '@/lib/history';
 import { sha256Web, wasmHost } from '@/lib/sqlite-wasm';
 
-import { AccountScreen } from './AccountScreen';
+import { AccountScreen, hasPendingCode } from './AccountScreen';
 import { LegalLinks } from './LegalLinks';
 import { MyAccountScreen } from './MyAccountScreen';
 import { HistoryScreen } from './HistoryScreen';
@@ -143,6 +143,12 @@ function canShareFiles(file: File): boolean {
 
 export function Tserohr() {
   const [tab, setTab] = useState<Tab>('merge');
+  // Une saisie de code était en cours avant que le navigateur ne recharge la
+  // page : on y retourne directement. Après le montage, car le rendu serveur
+  // ne voit pas `sessionStorage`.
+  useEffect(() => {
+    if (hasPendingCode()) setTab('account');
+  }, []);
   const [fileA, setFileA] = useState<BackupInfo | null>(null);
   const [fileB, setFileB] = useState<BackupInfo | null>(null);
   const [strategy, setStrategy] = useState<ConflictStrategy>('newest');
@@ -167,6 +173,14 @@ export function Tserohr() {
   const [stored, setStored] = useState<Set<string>>(new Set());
 
   const session = useSession();
+  // Better Auth recharge la session après une inscription et chaque fois que
+  // l'onglet revient au premier plan (sur iPhone : en baissant le centre de
+  // notifications, en revenant de Mail). Sans compte connecté, `isPending`
+  // repasse alors à vrai : démonter l'écran de compte à ce moment effaçait
+  // l'étape en cours, et la saisie du code revenait à la connexion. On ne
+  // l'attend donc qu'au premier chargement.
+  const [sessionKnown, setSessionKnown] = useState(false);
+  if (!session.isPending && !sessionKnown) setSessionKnown(true);
 
   /**
    * Depuis Mon compte : déconnecte. L'onglet reste sur le compte, qui montre
@@ -660,9 +674,9 @@ export function Tserohr() {
                     setRemoteHistory(null);
                   }}
                 />
-              ) : session.isPending ? null : (
+              ) : sessionKnown ? (
                 <AccountScreen onDone={() => switchTab('merge')} />
-              )
+              ) : null
             ) : tab === 'merge' ? (
               <HomeScreen
                 fileA={fileA}

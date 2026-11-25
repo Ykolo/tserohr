@@ -11,9 +11,11 @@
  */
 'use client';
 
-import type { FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 
-import { codeSentLead, resendLabel, useAccountFlow, type AccountClient, type AccountStep } from '@core/account-flow';
+import {
+  codeSentLead, resendLabel, useAccountFlow, type AccountClient, type AccountStep, type PendingCode,
+} from '@core/account-flow';
 import { MIN_PASSWORD } from '@core/auth-errors';
 
 import { emailOtp, signIn, signUp } from '@/lib/auth-client';
@@ -53,8 +55,49 @@ const ACTIONS: Record<AccountStep, string> = {
 
 const LEAD = 'Pour retrouver tes sauvegardes et tes fusions sur tous tes appareils. La fusion, elle, marche sans compte.';
 
+/**
+ * La saisie de code en cours, gardée le temps de l'onglet. Sur iPhone, Safari
+ * recharge parfois la page quand on revient de Mail avec le code : on reprend
+ * alors à la saisie plutôt qu'à la connexion. Ni mot de passe ni code ici.
+ */
+const PENDING_KEY = 'tserohr.pending-code';
+/** Au-delà, le code a expiré de toute façon : on repart de la connexion. */
+const PENDING_MAX_AGE_MS = 60 * 60 * 1000;
+
+function loadPending(): PendingCode | null {
+  try {
+    const raw = sessionStorage.getItem(PENDING_KEY);
+    if (!raw) return null;
+    const p = JSON.parse(raw) as Partial<PendingCode>;
+    const valid = (p.step === 'verify' || p.step === 'forgot-reset')
+      && typeof p.email === 'string' && p.email.length > 0
+      && (p.verifyFrom === 'sign-in' || p.verifyFrom === 'sign-up')
+      && typeof p.sentAt === 'number' && Date.now() - p.sentAt < PENDING_MAX_AGE_MS;
+    return valid ? (p as PendingCode) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Une saisie de code attend-elle, dans cet onglet ? */
+export function hasPendingCode(): boolean {
+  return loadPending() !== null;
+}
+
+function savePending(pending: PendingCode | null): void {
+  try {
+    if (pending) sessionStorage.setItem(PENDING_KEY, JSON.stringify(pending));
+    else sessionStorage.removeItem(PENDING_KEY);
+  } catch {
+    // Stockage refusé (navigation privée stricte) : on fait sans.
+  }
+}
+
 export function AccountScreen({ onDone }: { onDone: () => void }) {
-  const flow = useAccountFlow(client, onDone);
+  // L'écran ne s'affiche qu'une fois la session connue, donc dans le
+  // navigateur : `sessionStorage` y est disponible dès le premier rendu.
+  const [resume] = useState(loadPending);
+  const flow = useAccountFlow(client, onDone, { resume, onPendingCode: savePending });
   const { step, busy } = flow;
   const entering = step === 'sign-in' || step === 'sign-up';
   const codeStep = step === 'verify' || step === 'forgot-reset';

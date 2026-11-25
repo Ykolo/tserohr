@@ -273,15 +273,6 @@
   border-color: var(--accent);
 }
 .input:disabled { opacity: 0.6; }
-/* Le code à 6 chiffres : gros, espacé, centré. */
-.otpInput {
-  text-align: center;
-  font-family: ui-monospace, Menlo, Consolas, monospace;
-  font-size: 24px;
-  font-weight: 600;
-  letter-spacing: 0.3em;
-  padding-block: 13px;
-}
 .fieldHint {
   font-size: 12px;
   line-height: 17px;
