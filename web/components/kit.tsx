@@ -4,12 +4,15 @@
  */
 'use client';
 
+import { REGEXP_ONLY_DIGITS } from 'input-otp';
 import { Eye, EyeOff } from 'lucide-react';
 import { useState, type CSSProperties, type InputHTMLAttributes, type ReactNode } from 'react';
 
+import { OTP_LENGTH } from '@core/account-flow';
 import type { ErrorView } from '@core/errors';
 
 import s from './kit.module.css';
+import { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot } from './ui/input-otp';
 
 export function Eyebrow({ children, tone }: { children: ReactNode; tone?: 'accent' | 'faint' }) {
   return <p className={`${s.eyebrow} ${tone ? s[tone] : ''}`}>{children}</p>;
@@ -147,9 +150,8 @@ export function TextButton({ label, onClick, disabled, align = 'center' }: Butto
 }
 
 /**
- * Champ du code reçu par e-mail. `autoComplete="one-time-code"` laisse Safari
- * le proposer depuis Mail ; un code collé avec des espaces est nettoyé par
- * `onChange` (voir `normalizeOtp`).
+ * Le code reçu par e-mail : six cases, en deux groupes de trois comme dans
+ * l'e-mail. Un code collé avec espaces ou tiret (« 123 456 ») passe tel quel.
  */
 export function OtpField({ label, value, onChange, disabled, autoFocus }: {
   label: string;
@@ -158,20 +160,29 @@ export function OtpField({ label, value, onChange, disabled, autoFocus }: {
   disabled?: boolean;
   autoFocus?: boolean;
 }) {
+  const half = Math.ceil(OTP_LENGTH / 2);
+  const slots = (from: number, to: number) =>
+    Array.from({ length: to - from }, (_, i) => <InputOTPSlot key={from + i} index={from + i} />);
   return (
     <label className={s.field}>
       <span className={s.fieldLabel}>{label}</span>
-      <input
-        className={`${s.input} ${s.otpInput}`}
+      <InputOTP
+        maxLength={OTP_LENGTH}
+        pattern={REGEXP_ONLY_DIGITS}
+        pasteTransformer={(text) => text.replace(/\D/g, '')}
         name="one-time-code"
         autoComplete="one-time-code"
         inputMode="numeric"
         required
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={onChange}
         disabled={disabled}
         autoFocus={autoFocus}
-      />
+      >
+        <InputOTPGroup>{slots(0, half)}</InputOTPGroup>
+        <InputOTPSeparator />
+        <InputOTPGroup>{slots(half, OTP_LENGTH)}</InputOTPGroup>
+      </InputOTP>
     </label>
   );
 }

@@ -1,0 +1,77 @@
+/* Les cases du code : deux groupes de cases jointives, un tiret entre eux. */
+.root {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.root:has(:disabled) { opacity: 0.6; }
+
+/* L'input transparent posé sur les cases par `input-otp`. */
+.input:disabled { cursor: not-allowed; }
+
+.group {
+  display: flex;
+  align-items: center;
+}
+
+.slot {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 58px;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--card);
+  border: 1px solid var(--outline);
+  border-left-width: 0;
+  transition: border-color 120ms, box-shadow 120ms;
+}
+.slot:first-child {
+  border-left-width: 1px;
+  border-start-start-radius: var(--radius-button);
+  border-end-start-radius: var(--radius-button);
+}
+.slot:last-child {
+  border-start-end-radius: var(--radius-button);
+  border-end-end-radius: var(--radius-button);
+}
+.slot[data-active] {
+  z-index: 1;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.caretBox {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.caret {
+  width: 1px;
+  height: 24px;
+  background: var(--ink);
+  animation: caret-blink 1s ease-out infinite;
+}
+@keyframes caret-blink {
+  0%, 70%, 100% { opacity: 1; }
+  20%, 50% { opacity: 0; }
+}
+
+.separator {
+  display: flex;
+  color: var(--faint);
+}
+
+/* Sur les plus petits écrans, six cases et le tiret tiennent sur une ligne. */
+@media (max-width: 360px) {
+  .root { gap: 6px; }
+  .slot { width: 42px; height: 52px; font-size: 22px; }
+}

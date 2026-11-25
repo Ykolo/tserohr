@@ -86,8 +86,14 @@ export function codeSentLead(step: 'verify' | 'forgot-reset', email: string): st
  * Le compte à rebours avant de pouvoir redemander un code. `markSent()` le
  * relance ; `remaining` vaut 0 quand le bouton peut repartir.
  */
-export function useResendCooldown(): { remaining: number; markSent: () => void; reset: () => void } {
-  const [sentAt, setSentAt] = useState<number | null>(null);
+export function useResendCooldown(initialSentAt: number | null = null): {
+  remaining: number;
+  /** Envoi du dernier code, ou `null`. */
+  sentAt: number | null;
+  markSent: () => void;
+  reset: () => void;
+} {
+  const [sentAt, setSentAt] = useState<number | null>(initialSentAt);
   const [now, setNow] = useState(() => Date.now());
   const remaining = resendRemaining(sentAt, now);
 
@@ -99,6 +105,7 @@ export function useResendCooldown(): { remaining: number; markSent: () => void; 
 
   return {
     remaining,
+    sentAt,
     markSent: () => { const t = Date.now(); setSentAt(t); setNow(t); },
     reset: () => setSentAt(null),
   };
@@ -123,24 +130,59 @@ export interface AccountClient {
 }
 
 /**
+ * Une saisie de code en cours : de quoi y revenir si l'écran est recréé (le
+ * navigateur a rechargé la page pendant qu'on lisait l'e-mail). Ni mot de
+ * passe ni code là-dedans.
+ */
+export interface PendingCode {
+  step: 'verify' | 'forgot-reset';
+  email: string;
+  verifyFrom: 'sign-in' | 'sign-up';
+  /** Envoi du dernier code, en millisecondes : le compte à rebours reprend. */
+  sentAt: number;
+}
+
+export interface AccountFlowOptions {
+  /** Une saisie de code à reprendre, plutôt que de partir de la connexion. */
+  resume?: PendingCode | null;
+  /** Appelé à chaque changement : la saisie en cours, ou `null` s'il n'y en a plus. */
+  onPendingCode?: (pending: PendingCode | null) => void;
+}
+
+/**
  * L'état et les actions de l'écran de compte. L'écran n'a plus qu'à afficher
  * les champs de `step` et à brancher `submit`, `resend` et `go`.
  */
-export function useAccountFlow(client: AccountClient, onDone: () => void) {
-  const [step, setStep] = useState<AccountStep>('sign-in');
+export function useAccountFlow(client: AccountClient, onDone: () => void, options: AccountFlowOptions = {}) {
+  const { resume, onPendingCode } = options;
+  const [step, setStep] = useState<AccountStep>(resume?.step ?? 'sign-in');
   // Où ramène « Changer d'adresse » depuis la saisie du code.
-  const [verifyFrom, setVerifyFrom] = useState<'sign-in' | 'sign-up'>('sign-up');
-  const [email, setEmail] = useState('');
+  const [verifyFrom, setVerifyFrom] = useState<'sign-in' | 'sign-up'>(resume?.verifyFrom ?? 'sign-up');
+  const [email, setEmail] = useState(resume?.email ?? '');
   const [password, setPassword] = useState('');
   const [confirmation, setConfirmation] = useState('');
   const [otp, setOtpRaw] = useState('');
   const [accepted, setAccepted] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<ErrorView | null>(null);
-  const cooldown = useResendCooldown();
+  const cooldown = useResendCooldown(resume?.sentAt ?? null);
 
   const address = email.trim();
   const choosingPassword = step === 'sign-up' || step === 'forgot-reset';
+
+  // Tient l'appelant au courant de la saisie de code en cours.
+  useEffect(() => {
+    if (!onPendingCode) return;
+    onPendingCode(step === 'verify' || step === 'forgot-reset'
+      ? { step, email: address, verifyFrom, sentAt: cooldown.sentAt ?? Date.now() }
+      : null);
+  }, [step, address, verifyFrom, cooldown.sentAt]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /** Connecté : plus de saisie à reprendre. */
+  const done = () => {
+    onPendingCode?.(null);
+    onDone();
+  };
 
   /** Change d'étape, en vidant ce qui n'a plus de sens dans la suivante. */
   const go = (next: AccountStep) => {
@@ -192,7 +234,7 @@ export function useAccountFlow(client: AccountClient, onDone: () => void) {
           unverified = stepAfterSignInFailure(f.code) === 'verify';
           return unverified;
         });
-        if (ok) onDone();
+        if (ok) done();
         else if (unverified) { setVerifyFrom('sign-in'); awaitCode('verify'); }
         return;
       }
@@ -210,7 +252,7 @@ export function useAccountFlow(client: AccountClient, onDone: () => void) {
       }
       case 'verify':
         // Le code validé ouvre la session (`autoSignInAfterVerification`).
-        if (await request('confirmation', () => client.verifyEmail({ email: address, otp }))) onDone();
+        if (await request('confirmation', () => client.verifyEmail({ email: address, otp }))) done();
         return;
       case 'forgot-email':
         if (await request('mot de passe oublié', () => client.requestPasswordReset({ email: address }))) awaitCode('forgot-reset');
@@ -218,7 +260,7 @@ export function useAccountFlow(client: AccountClient, onDone: () => void) {
       case 'forgot-reset': {
         if (!await request('réinitialisation', () => client.resetPassword({ email: address, otp, password }))) return;
         // Toutes les sessions viennent d'être révoquées : on se reconnecte.
-        if (await request('connexion', () => client.signIn({ email: address, password }))) onDone();
+        if (await request('connexion', () => client.signIn({ email: address, password }))) done();
         else setStep('sign-in'); // l'erreur reste affichée
         return;
       }
