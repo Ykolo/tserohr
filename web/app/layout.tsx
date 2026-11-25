@@ -4,6 +4,8 @@ import type { CSSProperties, ReactNode } from 'react';
 
 import { color, radius } from '@core/theme';
 
+import { Toaster } from '@/components/ui/sonner';
+
 import './globals.css';
 
 const sans = Instrument_Sans({
@@ -40,7 +42,10 @@ const tokens = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="fr" className={`${sans.variable} ${serif.variable}`} style={tokens}>
-      <body>{children}</body>
+      <body>
+        {children}
+        <Toaster />
+      </body>
     </html>
   );
 }

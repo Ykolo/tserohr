@@ -122,7 +122,6 @@ export function SummaryScreen({
 
       <div className={s.footer}>
         {error && <ErrorNotice error={error} onDismiss={onDismissError} />}
-        {status && !error && <p className={s.status} role="status">{status}</p>}
         <PrimaryButton label="Télécharger le fichier" onClick={onDownload} disabled={busy} />
         {onShare && <SecondaryButton label="Partager" onClick={onShare} disabled={busy} />}
         {cloudSave?.state === 'saved' && cloudSave.mergeId && onPromote && (

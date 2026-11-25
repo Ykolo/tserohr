@@ -147,14 +147,24 @@ export interface AccountFlowOptions {
   resume?: PendingCode | null;
   /** Appelé à chaque changement : la saisie en cours, ou `null` s'il n'y en a plus. */
   onPendingCode?: (pending: PendingCode | null) => void;
+  /** Une étape a réussi : de quoi l'annoncer (un toast sur le site). */
+  onEvent?: (event: AccountEvent) => void;
 }
+
+/** Ce qui vient de réussir. Les échecs, eux, passent par `error`. */
+export type AccountEvent =
+  | { type: 'signed-in' }
+  | { type: 'verified' }
+  | { type: 'password-reset' }
+  /** Un code est parti : confirmation d'adresse ou réinitialisation, premier envoi ou renvoi. */
+  | { type: 'code-sent'; purpose: 'verify' | 'reset'; email: string; again: boolean };
 
 /**
  * L'état et les actions de l'écran de compte. L'écran n'a plus qu'à afficher
  * les champs de `step` et à brancher `submit`, `resend` et `go`.
  */
 export function useAccountFlow(client: AccountClient, onDone: () => void, options: AccountFlowOptions = {}) {
-  const { resume, onPendingCode } = options;
+  const { resume, onPendingCode, onEvent } = options;
   const [step, setStep] = useState<AccountStep>(resume?.step ?? 'sign-in');
   // Où ramène « Changer d'adresse » depuis la saisie du code.
   const [verifyFrom, setVerifyFrom] = useState<'sign-in' | 'sign-up'>(resume?.verifyFrom ?? 'sign-up');
@@ -234,8 +244,12 @@ export function useAccountFlow(client: AccountClient, onDone: () => void, option
           unverified = stepAfterSignInFailure(f.code) === 'verify';
           return unverified;
         });
-        if (ok) done();
-        else if (unverified) { setVerifyFrom('sign-in'); awaitCode('verify'); }
+        if (ok) { onEvent?.({ type: 'signed-in' }); done(); }
+        else if (unverified) {
+          setVerifyFrom('sign-in');
+          awaitCode('verify');
+          onEvent?.({ type: 'code-sent', purpose: 'verify', email: address, again: false });
+        }
         return;
       }
       case 'sign-up': {
@@ -247,21 +261,35 @@ export function useAccountFlow(client: AccountClient, onDone: () => void, option
           name: address.split('@')[0] || address,
           acceptTerms: true,
         }));
-        if (ok) { setVerifyFrom('sign-up'); awaitCode('verify'); }
+        if (ok) {
+          setVerifyFrom('sign-up');
+          awaitCode('verify');
+          onEvent?.({ type: 'code-sent', purpose: 'verify', email: address, again: false });
+        }
         return;
       }
       case 'verify':
         // Le code validé ouvre la session (`autoSignInAfterVerification`).
-        if (await request('confirmation', () => client.verifyEmail({ email: address, otp }))) done();
+        if (await request('confirmation', () => client.verifyEmail({ email: address, otp }))) {
+          onEvent?.({ type: 'verified' });
+          done();
+        }
         return;
       case 'forgot-email':
-        if (await request('mot de passe oublié', () => client.requestPasswordReset({ email: address }))) awaitCode('forgot-reset');
+        if (await request('mot de passe oublié', () => client.requestPasswordReset({ email: address }))) {
+          awaitCode('forgot-reset');
+          onEvent?.({ type: 'code-sent', purpose: 'reset', email: address, again: false });
+        }
         return;
       case 'forgot-reset': {
         if (!await request('réinitialisation', () => client.resetPassword({ email: address, otp, password }))) return;
         // Toutes les sessions viennent d'être révoquées : on se reconnecte.
-        if (await request('connexion', () => client.signIn({ email: address, password }))) done();
-        else setStep('sign-in'); // l'erreur reste affichée
+        if (await request('connexion', () => client.signIn({ email: address, password }))) {
+          onEvent?.({ type: 'password-reset' });
+          done();
+        } else {
+          setStep('sign-in'); // l'erreur reste affichée
+        }
         return;
       }
     }
@@ -272,7 +300,11 @@ export function useAccountFlow(client: AccountClient, onDone: () => void, option
     const ok = step === 'verify'
       ? await request('renvoi du code', () => client.sendVerificationOtp({ email: address }))
       : await request('renvoi du code', () => client.requestPasswordReset({ email: address }));
-    if (ok) { cooldown.markSent(); setOtpRaw(''); }
+    if (ok) {
+      cooldown.markSent();
+      setOtpRaw('');
+      onEvent?.({ type: 'code-sent', purpose: step === 'verify' ? 'verify' : 'reset', email: address, again: true });
+    }
   };
 
   return {
