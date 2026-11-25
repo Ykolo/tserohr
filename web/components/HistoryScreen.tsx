@@ -36,8 +36,6 @@ export interface HistoryScreenProps {
   entries: HistoryEntry[];
   /** Identifiants des fusions dont le fichier est encore conservé. */
   stored: Set<string>;
-  /** Confirmation de téléchargement. */
-  status: string | null;
   error: ErrorView | null;
   onDismissError: () => void;
   onDownload: (entry: HistoryEntry) => void;
@@ -121,7 +119,7 @@ function RemoteEntry({ merge, onDownload, onDelete, onPromote }: {
   );
 }
 
-export function HistoryScreen({ entries, stored, status, error, onDismissError, onDownload, remote }: HistoryScreenProps) {
+export function HistoryScreen({ entries, stored, error, onDismissError, onDownload, remote }: HistoryScreenProps) {
   return (
     <div className={s.scroll}>
       <header className={s.historyHeader}>
@@ -130,7 +128,6 @@ export function HistoryScreen({ entries, stored, status, error, onDismissError, 
       </header>
 
       {error && <div className={s.historyNotice}><ErrorNotice error={error} onDismiss={onDismissError} /></div>}
-      {status && !error && <p className={`${s.status} ${s.historyNotice}`} role="status">{status}</p>}
 
       {remote ? (
         remote.items === null ? (

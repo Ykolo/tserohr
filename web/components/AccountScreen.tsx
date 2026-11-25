@@ -19,6 +19,7 @@ import {
 import { MIN_PASSWORD } from '@core/auth-errors';
 
 import { emailOtp, signIn, signUp } from '@/lib/auth-client';
+import { notifyAccount } from '@/lib/notify';
 
 import { ErrorNotice, Eyebrow, OtpField, PasswordField, PrimaryButton, Segmented, TextButton, TextField } from './kit';
 import s from './screens.module.css';
@@ -97,7 +98,7 @@ export function AccountScreen({ onDone }: { onDone: () => void }) {
   // L'écran ne s'affiche qu'une fois la session connue, donc dans le
   // navigateur : `sessionStorage` y est disponible dès le premier rendu.
   const [resume] = useState(loadPending);
-  const flow = useAccountFlow(client, onDone, { resume, onPendingCode: savePending });
+  const flow = useAccountFlow(client, onDone, { resume, onPendingCode: savePending, onEvent: notifyAccount });
   const { step, busy } = flow;
   const entering = step === 'sign-in' || step === 'sign-up';
   const codeStep = step === 'verify' || step === 'forgot-reset';

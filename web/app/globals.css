@@ -58,3 +58,11 @@ p {
     background: var(--canvas);
   }
 }
+
+/* Toasts (`components/ui/sonner.tsx`) : texte secondaire et icône aux couleurs du site. */
+[data-sonner-toast] .toast-description {
+  color: var(--muted);
+}
+[data-sonner-toast] .toast-icon {
+  color: var(--accent);
+}

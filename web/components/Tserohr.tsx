@@ -25,6 +25,7 @@ import { overallRatio } from '@core/progress';
 import { signOut, useSession } from '@/lib/auth-client';
 import { describeAuthError } from '@core/auth-errors';
 import { cloud } from '@/lib/cloud';
+import { notify } from '@/lib/notify';
 import { addToHistory, loadFile, loadHistory, storedFiles, storeFile, type HistoryEntry } from '@/lib/history';
 import { sha256Web, wasmHost } from '@/lib/sqlite-wasm';
 
@@ -168,6 +169,14 @@ export function Tserohr() {
   const [result, setResult] = useState<MergeResult | null>(null);
   const [shareable, setShareable] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
+  /**
+   * Une action a réussi : un toast, et `status`, que l'écran de fin lit pour
+   * proposer « Terminer » plutôt que « Terminer sans télécharger ».
+   */
+  const announce = useCallback((title: string, detail: string) => {
+    setStatus(`${title} : ${detail}`);
+    notify(title, detail);
+  }, []);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   /** Fusions dont le fichier est encore conservé, donc retéléchargeable. */
   const [stored, setStored] = useState<Set<string>>(new Set());
@@ -194,6 +203,8 @@ export function Tserohr() {
         const view = describeAuthError(failure);
         setError(logError('déconnexion', new Error(view.technical), view));
         setTab('merge');
+      } else {
+        notify('Tu es déconnecté');
       }
     } catch (err) {
       setError(logError('déconnexion', err, describeAuthError({ message: String(err) })));
@@ -415,6 +426,7 @@ export function Tserohr() {
       const { slotsKept: _kept, ...dto } = saved;
       setRemoteHistory((h) => (h ? { ...h, items: [dto, ...h.items] } : h));
       logInfo('synchronisation', `${saved.fileName} enregistrée dans le compte`);
+      notify('Fusion enregistrée dans ton compte', saved.fileName);
     } catch (err) {
       if (pendingSave.current !== job) return;
       setCloudSave({
@@ -458,7 +470,7 @@ export function Tserohr() {
       const link = document.createElement('a');
       link.href = url;
       link.click();
-      setStatus(`Téléchargé : ${merge.fileName}`);
+      announce('Fusion téléchargée', merge.fileName);
     } catch (err) {
       setError(logError('téléchargement depuis le compte', err));
     }
@@ -470,7 +482,7 @@ export function Tserohr() {
     try {
       await cloud.deleteMerge(merge.id);
       setRemoteHistory((h) => (h ? { ...h, items: h.items.filter((m) => m.id !== merge.id) } : h));
-      setStatus(`Supprimée : ${merge.fileName}`);
+      announce('Fusion supprimée du compte', merge.fileName);
     } catch (err) {
       setError(logError('suppression d’une fusion', err));
     }
@@ -502,7 +514,7 @@ export function Tserohr() {
         if (picks.current.a === pick) setRemote((r) => ({ ...r, a: null }));
         return false;
       }
-      setStatus(`Placée dans l’emplacement A : ${dto.name}`);
+      announce('Placée dans l’emplacement A', dto.name);
       return true;
     } catch (err) {
       setError(logError('fusion placée en A', err));
@@ -588,7 +600,7 @@ export function Tserohr() {
   const download = useCallback(() => {
     if (!result) return;
     triggerDownload(result.file, result.fileName);
-    setStatus(`Téléchargé : ${result.fileName}`);
+    announce('Fusion téléchargée', result.fileName);
   }, [result]);
 
   const downloadPast = useCallback(async (entry: HistoryEntry) => {
@@ -607,7 +619,7 @@ export function Tserohr() {
         return;
       }
       triggerDownload(file, entry.name);
-      setStatus(`Téléchargé : ${entry.name}`);
+      announce('Fusion téléchargée', entry.name);
     } catch (err) {
       setError(logError('téléchargement', err));
     }
@@ -667,13 +679,17 @@ export function Tserohr() {
                   email={session.data.user.email}
                   busy={busy}
                   onSignOut={() => void logout()}
-                  onDeleted={() => switchTab('merge')}
+                  onDeleted={() => {
+                    notify('Compte supprimé', 'Un e-mail de confirmation vient de t’être envoyé.');
+                    switchTab('merge');
+                  }}
                   consented={consent.given}
                   onWithdraw={async () => {
                     await consent.withdraw();
                     // Tout ce que le compte gardait vient d'être effacé.
                     setRemote(NO_REMOTE);
                     setRemoteHistory(null);
+                    notify('Accord retiré', 'Tes sauvegardes et tes fusions ont été effacées du serveur.');
                   }}
                 />
               ) : sessionKnown ? (
@@ -697,14 +713,15 @@ export function Tserohr() {
                   keepInAccount,
                   onKeepChange: setKeepInAccount,
                   consent: consent.state,
-                  onConsent: () => void consent.give(),
+                  onConsent: () => void consent.give().then((ok) => {
+                    if (ok) notify('Stockage activé', 'Tes sauvegardes et tes fusions seront gardées dans ton compte.');
+                  }),
                 } : undefined}
               />
             ) : (
               <HistoryScreen
                 entries={history}
                 stored={stored}
-                status={status}
                 error={error}
                 onDismissError={() => setError(null)}
                 onDownload={(entry) => void downloadPast(entry)}
