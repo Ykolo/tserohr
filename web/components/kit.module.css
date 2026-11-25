@@ -279,15 +279,6 @@
   color: var(--fainter);
 }
 
-/* Fond rouge plein : le bouton qui ouvre la confirmation de suppression du compte. */
-.dangerSolid {
-  background: var(--danger);
-  border-color: var(--danger);
-  color: var(--onAccent);
-}
-.dangerSolid:not(:disabled):hover,
-.dangerSolid:not(:disabled):active { background: var(--danger); filter: brightness(0.92); }
-
 /* --- Bouton icône, avec infobulle au survol et au focus clavier --- */
 
 .iconButton {

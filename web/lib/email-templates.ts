@@ -9,6 +9,8 @@
  */
 import { color } from '@core/theme';
 
+import { EDITOR } from '@/lib/legal';
+
 export interface EmailContent {
   subject: string;
   html: string;
@@ -128,5 +130,22 @@ export function existingAccountEmail(): EmailContent {
       footnote('Si ce n’était pas toi, ignore ce message : rien n’a changé sur ton compte.'),
     ].join('\n')),
     text: [title, '', body, '', 'Si ce n’était pas toi, ignore ce message : rien n’a changé sur ton compte.'].join('\n'),
+  };
+}
+
+/**
+ * Envoyé une fois le compte supprimé : la trace écrite de l'effacement, et
+ * l'alerte si quelqu'un d'autre l'a fait. Le compte n'existe plus, il n'y a
+ * donc rien à « reprendre » : on dit seulement ce qui est parti.
+ */
+export function accountDeletedEmail(): EmailContent {
+  const title = 'Ton compte a été supprimé';
+  const body = 'Ton compte Tserohr vient d’être supprimé, avec les sauvegardes et les fusions qu’il gardait sur le serveur. Les fichiers enregistrés sur tes appareils ne sont pas touchés.';
+  const after = 'Tu peux toujours fusionner tes sauvegardes sans compte, ou en créer un nouveau quand tu veux.';
+  const warning = `Si ce n’est pas toi qui l’as supprimé, écris tout de suite à ${EDITOR.email}.`;
+  return {
+    subject: 'Ton compte Tserohr a été supprimé',
+    html: layout(title, [paragraph(body), paragraph(after), footnote(warning)].join('\n')),
+    text: [title, '', body, '', after, '', warning].join('\n'),
   };
 }

@@ -11,6 +11,14 @@
   margin-inline: auto;
 }
 
+
+/* Tout l'écran pour le contenu et les onglets : le pied légal reste dessous. */
+.frame {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
 .content {
   flex: 1;
   display: flex;
@@ -451,19 +459,109 @@
   padding: 6px 26px 18px;
 }
 
-/* Mon compte : la suppression, à l'écart en bas de l'écran. */
-.dangerZone {
+/* Mon compte : une carte d'identité, puis une carte par réglage. */
+.accountCard {
+  margin-top: 26px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+}
+.identity {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px;
+}
+.avatar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--onAccent);
+  font-family: var(--font-serif), serif;
+  font-size: 24px;
+  line-height: 1;
+}
+.identityText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.identityLabel {
+  font-size: 13px;
+  color: var(--muted);
+}
+.identityEmail {
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.accountRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 15px 18px;
+  border-top: 1px solid var(--divider);
+  font-weight: 500;
+  font-size: 15px;
+  color: var(--inkSoft);
+  text-align: left;
+  transition: background-color 120ms;
+}
+.accountRow:not(:disabled):hover,
+.accountRow:not(:disabled):active { background: var(--sunken); }
+.accountRow:disabled { opacity: 0.5; }
+
+.accountSection {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin-top: 48px;
-  padding-top: 24px;
-  border-top: 1px solid var(--border);
+  margin-top: 16px;
+  padding: 18px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
 }
-.dangerTitle {
-  font-size: 15px;
+.accountSectionDanger {
+  margin-top: 32px;
+  border-color: var(--dangerBorder);
+}
+.accountSectionDanger .sectionTitle { color: var(--danger); }
+.sectionHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.sectionTitle {
+  font-size: 16px;
   font-weight: 600;
-  color: var(--danger);
+  color: var(--ink);
+}
+.sectionText {
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--muted);
+}
+.badgeOn {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: var(--radius-badge, 999px);
+  background: var(--sunken);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
 }
 
 /* Boîte de confirmation (`<dialog>` modal). */

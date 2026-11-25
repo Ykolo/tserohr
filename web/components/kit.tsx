@@ -52,20 +52,11 @@ export function SecondaryButton({ label, onClick, disabled }: ButtonProps) {
   return <button type="button" className={s.secondary} onClick={onClick} disabled={disabled}>{label}</button>;
 }
 
-/**
- * Action irréversible (« Supprimer définitivement »). `submit` dans un
- * formulaire. `solid` : fond rouge plein, pour le bouton qui ouvre la
- * confirmation au bas de « Mon compte ».
- */
-export function DangerButton({ label, onClick, disabled, type = 'button', solid }: ButtonProps & {
+/** Action irréversible (« Supprimer définitivement »). `submit` dans un formulaire. */
+export function DangerButton({ label, onClick, disabled, type = 'button' }: ButtonProps & {
   type?: 'button' | 'submit';
-  solid?: boolean;
 }) {
-  return (
-    <button type={type} className={`${s.danger} ${solid ? s.dangerSolid : ''}`} onClick={onClick} disabled={disabled}>
-      {label}
-    </button>
-  );
+  return <button type={type} className={s.danger} onClick={onClick} disabled={disabled}>{label}</button>;
 }
 
 /**
